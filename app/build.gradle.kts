@@ -57,7 +57,7 @@ android {
 
     configurations.all {
         resolutionStrategy {
-            force("com.google.errorprone:error_prone_annotations:2.36.0")
+            force("com.google.errorprone:error_prone_annotations:2.47.0")
         }
     }
 }
