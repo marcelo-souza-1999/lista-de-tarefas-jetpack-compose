@@ -29,7 +29,7 @@ compose-shimmer = "1.3.3"
 koin = "4.1.1"
 koin-annotations = "2.3.1"
 coil-images = "3.3.0"
-firebase-bom = "34.8.0"
+firebase-bom = "34.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
