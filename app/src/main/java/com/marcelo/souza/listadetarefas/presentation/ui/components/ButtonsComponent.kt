@@ -97,7 +97,7 @@ fun SecondaryButton(
     showBackground = true
 )
 @Composable
-private fun ButtonsPreviewLight() {
+internal fun ButtonsPreviewLight() {
     ListaDeTarefasTheme(darkTheme = false) {
         Surface {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -117,7 +117,7 @@ private fun ButtonsPreviewLight() {
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )
 @Composable
-private fun ButtonsPreviewDark() {
+internal fun ButtonsPreviewDark() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
             Column(modifier = Modifier.padding(16.dp)) {
