@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Lista de Tarefas</string>
+
+    <string name="login_title">Gerencie suas tarefas com facilidade</string>
+    <string name="login_button_primary_text">Entrar</string>
+    <string name="signup_button_secondary_text">Não tem conta? Cadastre-se agora</string>
+
+    <string name="register_title">Crie sua conta</string>
+    <string name="register_subtitle">Preencha os dados abaixo</string>
+    <string name="register_button_text">Cadastrar</string>
+    <string name="login_link_text">Já tem uma conta? Faça login</string>
+
+    <string name="label_name">Nome completo</string>
+    <string name="placeholder_name">Digite seu nome</string>
+
+    <string name="label_email">E-mail</string>
+    <string name="placeholder_email">Insira seu e-mail</string>
+
+    <string name="label_password">Senha</string>
+    <string name="placeholder_password">Insira sua senha</string>
 </resources>
