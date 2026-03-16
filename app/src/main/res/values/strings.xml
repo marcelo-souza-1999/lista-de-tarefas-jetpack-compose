@@ -18,4 +18,20 @@
 
     <string name="label_password">Senha</string>
     <string name="placeholder_password">Insira sua senha</string>
+
+    <string name="home_greeting">Olá,</string>
+
+    <string name="title_topbar_registration_tasks">Nova Tarefa</string>
+    <string name="register_tasks_button_text">Salvar Tarefa</string>
+    <string name="title_register_task_label">Título da Tarefa</string>
+    <string name="description_register_task_label">Descrição da Tarefa</string>
+    <string name="title_priority_register_task_label">Prioridade</string>
+
+    <string name="title_success_dialog_registration_task">Tarefa Salva!</string>
+    <string name="message_success_dialog_registration_task">Sua nova tarefa foi registrada com sucesso e já está disponível na sua lista.</string>
+    <string name="title_button_success_dialog_registration_task">OK</string>
+
+    <string name="task_priority_high">Alta</string>
+    <string name="task_priority_medium">Média</string>
+    <string name="task_priority_low">Baixa</string>
 </resources>

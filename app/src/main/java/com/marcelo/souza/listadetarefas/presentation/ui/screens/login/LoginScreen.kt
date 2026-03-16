@@ -1,4 +1,4 @@
-package com.marcelo.souza.listadetarefas.presentation.ui.screens
+package com.marcelo.souza.listadetarefas.presentation.ui.screens.login
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -14,8 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.AppRegistration
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -49,11 +47,10 @@ import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
 import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryButton
 
 @Composable
-fun RegistrationScreen() {
+fun LoginScreen() {
     val dimens = LocalDimens.current
     val scrollState = rememberScrollState()
 
-    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -64,7 +61,6 @@ fun RegistrationScreen() {
             .imePadding(),
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -75,10 +71,10 @@ fun RegistrationScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(dimens.size32))
+            Spacer(modifier = Modifier.height(dimens.size8))
 
             Icon(
-                imageVector = Icons.Default.AppRegistration,
+                imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
                 modifier = Modifier.size(dimens.size100),
                 tint = MaterialTheme.colorScheme.primary
@@ -87,40 +83,13 @@ fun RegistrationScreen() {
             Spacer(modifier = Modifier.height(dimens.size24))
 
             Text(
-                text = stringResource(R.string.register_title),
+                text = stringResource(id = R.string.login_title),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     textAlign = TextAlign.Center
                 )
             )
 
-            Text(
-                text = stringResource(R.string.register_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppTheme.colors.textSecondary,
-                modifier = Modifier.padding(top = dimens.size8)
-            )
-
             Spacer(modifier = Modifier.height(dimens.size48))
-
-            InputTextField(
-                text = name,
-                onValueText = { name = it },
-                label = stringResource(R.string.label_name),
-                placeholder = stringResource(R.string.placeholder_name),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    capitalization = KeyboardCapitalization.Words
-                ),
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        tint = AppTheme.colors.textSecondary
-                    )
-                }
-            )
-
-            Spacer(modifier = Modifier.height(dimens.size16))
 
             InputTextField(
                 text = email,
@@ -173,33 +142,33 @@ fun RegistrationScreen() {
             Spacer(modifier = Modifier.height(dimens.size32))
 
             PrimaryButton(
-                text = stringResource(R.string.register_button_text),
-                onClick = { /* Lógica de cadastro */ },
+                text = stringResource(R.string.login_button_primary_text),
+                onClick = { },
                 isLoading = false
             )
 
             Spacer(modifier = Modifier.height(dimens.size16))
 
             SecondaryButton(
-                text = stringResource(R.string.login_link_text),
-                onClick = { /* Navegar para Login */ }
+                text = stringResource(R.string.signup_button_secondary_text),
+                onClick = { }
             )
 
-            Spacer(modifier = Modifier.height(dimens.size24))
+            Spacer(modifier = Modifier.height(dimens.size16))
         }
     }
 }
 
 @Preview(
-    name = "Dark Mode",
+    name = "Login Screen",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )
 @Composable
-internal fun RegistrationScreenPreview() {
+internal fun LoginScreenDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            RegistrationScreen()
+            LoginScreen()
         }
     }
 }

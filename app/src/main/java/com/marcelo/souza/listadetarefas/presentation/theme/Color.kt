@@ -17,8 +17,15 @@ val SurfaceDark = Color(0xFF1E293B)
 val TextPrimaryDark = Color(0xFFF1F5F9)
 val TextSecondaryDark = Color(0xFF94A3B8)
 
-// Status
+// Status & Border
 val ErrorRed = Color(0xFFEF4444)
-val SuccessGreen = Color(0xFF10B981)
+val LowGreen = Color(0xFF10B981)
+val WarningYellow = Color(0xFFFFB000)
+val EditBlue = Color(0xFF3B82F6)
 val BorderGray = Color(0xFFE2E8F0)
 val BorderGrayDark = Color(0xFF334155)
+
+// Prioritys
+val PriorityHigh = ErrorRed
+val PriorityMedium = WarningYellow
+val PriorityLow = LowGreen

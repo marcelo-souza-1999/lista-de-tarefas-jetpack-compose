@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
-import com.marcelo.souza.listadetarefas.presentation.ui.screens.LoginScreen
+import com.marcelo.souza.listadetarefas.presentation.ui.screens.tasks.RegistrationTaskScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -13,7 +13,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ListaDeTarefasTheme {
-                LoginScreen()
+                RegistrationTaskScreen(
+                    onBackClick = { finish() }
+                )
             }
         }
     }
