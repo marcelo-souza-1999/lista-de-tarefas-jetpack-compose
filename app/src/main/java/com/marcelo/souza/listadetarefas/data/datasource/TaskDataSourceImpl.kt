@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.marcelo.souza.listadetarefas.data.model.TaskDto
 import com.marcelo.souza.listadetarefas.data.utils.Constants.COLLECTION_NAME
+import com.marcelo.souza.listadetarefas.data.utils.Constants.EMPTY_ID
+import com.marcelo.souza.listadetarefas.data.utils.Constants.FIELD_IS_COMPLETED
 import com.marcelo.souza.listadetarefas.domain.model.DataError
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
 import kotlinx.coroutines.tasks.await
@@ -18,7 +20,7 @@ class TaskDataSourceImpl(
 
     override suspend fun saveTask(task: TaskDto): TaskResultViewData<Boolean> {
         return try {
-            firestore.collection(COLLECTION_NAME).add(task.copy(id = "")).await()
+            firestore.collection(COLLECTION_NAME).add(task.copy(id = EMPTY_ID)).await()
             TaskResultViewData.Success(true)
         } catch (e: Exception) {
             TaskResultViewData.Error(mapFirebaseError(e))
@@ -41,7 +43,31 @@ class TaskDataSourceImpl(
         return try {
             firestore.collection(COLLECTION_NAME)
                 .document(taskId)
-                .update("isCompleted", isCompleted)
+                .update(FIELD_IS_COMPLETED, isCompleted)
+                .await()
+            TaskResultViewData.Success(true)
+        } catch (e: Exception) {
+            TaskResultViewData.Error(mapFirebaseError(e))
+        }
+    }
+
+    override suspend fun updateTask(taskId: String, task: TaskDto): TaskResultViewData<Boolean> {
+        return try {
+            firestore.collection(COLLECTION_NAME)
+                .document(taskId)
+                .set(task.copy(id = taskId))
+                .await()
+            TaskResultViewData.Success(true)
+        } catch (e: Exception) {
+            TaskResultViewData.Error(mapFirebaseError(e))
+        }
+    }
+
+    override suspend fun deleteTask(taskId: String): TaskResultViewData<Boolean> {
+        return try {
+            firestore.collection(COLLECTION_NAME)
+                .document(taskId)
+                .delete()
                 .await()
             TaskResultViewData.Success(true)
         } catch (e: Exception) {
@@ -56,10 +82,8 @@ class TaskDataSourceImpl(
                 when (e.code) {
                     FirebaseFirestoreException.Code.UNAUTHENTICATED,
                     FirebaseFirestoreException.Code.PERMISSION_DENIED -> DataError.Permission()
-
                     FirebaseFirestoreException.Code.UNAVAILABLE,
                     FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> DataError.Network()
-
                     else -> DataError.Unknown()
                 }
             }

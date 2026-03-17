@@ -38,6 +38,11 @@
     <string name="title_button_positive_error_dialog_registration_task">Tentar novamente</string>
     <string name="title_button_negative_error_dialog_registration_task">Cancelar</string>
 
+    <string name="delete_task_dialog_title">Confirmar exclusão</string>
+    <string name="delete_task_dialog_message">Deseja realmente excluir a tarefa "%1$s"?</string>
+    <string name="title_button_delete_confirm">Excluir</string>
+    <string name="title_button_cancel_delete_confirm">Cancelar</string>
+
     <string name="filter_all">Todas</string>
     <string name="filter_pending">Pendentes</string>
     <string name="filter_completed">Concluídas</string>

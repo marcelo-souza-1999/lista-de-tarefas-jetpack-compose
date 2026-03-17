@@ -19,15 +19,21 @@ class TaskRepositoryImpl(
 
     override suspend fun getTasks(): TaskResultViewData<List<TaskViewData>> {
         return when (val result = taskDataSource.getTasks()) {
-            is TaskResultViewData.Success -> {
-                TaskResultViewData.Success(result.data.map { it.toDomain() })
-            }
-
+            is TaskResultViewData.Success -> TaskResultViewData.Success(result.data.map { it.toDomain() })
             is TaskResultViewData.Error -> TaskResultViewData.Error(result.error)
         }
     }
 
     override suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): TaskResultViewData<Boolean> {
         return taskDataSource.updateTaskCompletion(taskId, isCompleted)
+    }
+
+    override suspend fun updateTask(task: TaskViewData): TaskResultViewData<Boolean> {
+        if (task.id.isBlank()) return TaskResultViewData.Success(false)
+        return taskDataSource.updateTask(task.id, task.toDto())
+    }
+
+    override suspend fun deleteTask(taskId: String): TaskResultViewData<Boolean> {
+        return taskDataSource.deleteTask(taskId)
     }
 }

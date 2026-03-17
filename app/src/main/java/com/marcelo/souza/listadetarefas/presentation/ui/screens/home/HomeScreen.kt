@@ -22,29 +22,32 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcelo.souza.listadetarefas.R
 import com.marcelo.souza.listadetarefas.domain.model.DataError
 import com.marcelo.souza.listadetarefas.domain.model.HomeUiState
 import com.marcelo.souza.listadetarefas.domain.model.TaskFilter
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.EmptyTasksState
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskDeleteConfirmationFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskLazyColumn
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TopBar
 import com.marcelo.souza.listadetarefas.presentation.viewmodel.HomeViewModel
@@ -57,18 +60,38 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
+    val dialogError by viewModel.dialogError.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState) {
-        val state = uiState
-        if (state is HomeUiState.Error) {
-            snackbarHostState.showSnackbar(message = context.getString(state.error.toMessageRes()))
-        }
-    }
+    var taskPendingDelete by remember { mutableStateOf<TaskViewData?>(null) }
 
     val tasks = (uiState as? HomeUiState.Success)?.tasks.orEmpty()
     val filteredTasks = tasks.filterBy(selectedFilter)
+
+    dialogError?.let { error ->
+        TaskErrorFancyDialog(
+            title = stringResource(R.string.title_error_dialog_registration_task),
+            message = stringResource(error.toMessageRes()),
+            onRetryClick = {
+                viewModel.dismissErrorDialog()
+                viewModel.fetchTasks()
+            },
+            onCancelClick = viewModel::dismissErrorDialog,
+            onDismissRequest = viewModel::dismissErrorDialog
+        )
+    }
+
+    taskPendingDelete?.let { task ->
+        TaskDeleteConfirmationFancyDialog(
+            title = stringResource(R.string.delete_task_dialog_title),
+            message = stringResource(R.string.delete_task_dialog_message, task.title),
+            onConfirmDelete = {
+                viewModel.onDeleteTask(task)
+                taskPendingDelete = null
+            },
+            onCancelClick = { taskPendingDelete = null },
+            onDismissRequest = { taskPendingDelete = null }
+        )
+    }
 
     HomeScreenContent(
         tasks = filteredTasks,
@@ -77,7 +100,8 @@ fun HomeScreen(
         onFilterChange = viewModel::onFilterChange,
         onAddTaskClick = onNavigateToCreateTask,
         onTaskCheckedChange = viewModel::onTaskCheckedChange,
-        snackbarHostState = snackbarHostState
+        onDeleteTask = { taskPendingDelete = it },
+        onEditTask = viewModel::onEditTask
     )
 }
 
@@ -89,7 +113,8 @@ private fun HomeScreenContent(
     onFilterChange: (TaskFilter) -> Unit,
     onAddTaskClick: () -> Unit,
     onTaskCheckedChange: (TaskViewData, Boolean) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    onDeleteTask: (TaskViewData) -> Unit,
+    onEditTask: (TaskViewData) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimens = LocalDimens.current
@@ -97,7 +122,6 @@ private fun HomeScreenContent(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = { AnimatedAddFab(onClick = onAddTaskClick) }
     ) { paddingValues ->
         Column(
@@ -127,9 +151,7 @@ private fun HomeScreenContent(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    ) { CircularProgressIndicator() }
                 }
 
                 tasks.isEmpty() -> {
@@ -143,7 +165,9 @@ private fun HomeScreenContent(
                     TaskLazyColumn(
                         tasks = tasks,
                         onTaskCheckedChange = onTaskCheckedChange,
-                        onTaskClick = {}
+                        onTaskClick = {},
+                        onDeleteTask = onDeleteTask,
+                        onEditTask = onEditTask
                     )
                 }
             }
@@ -198,10 +222,7 @@ private fun DataError.toMessageRes(): Int = when (this) {
 }
 
 @Composable
-private fun AnimatedAddFab(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun AnimatedAddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -238,15 +259,16 @@ private fun HomeScreenPreview() {
     ListaDeTarefasTheme(darkTheme = false) {
         HomeScreenContent(
             tasks = listOf(
-                TaskViewData("1", "Organizar Workspace", "Limpar a mesa e organizar os cabos do setup.", "HIGH", false),
-                TaskViewData("2", "Academia", "Treino de pernas e 30 minutos de cardio.", "LOW", true)
+                TaskViewData("1", "Organizar Workspace", "Limpar a mesa e organizar os cabos do setup.", PRIORITY_HIGH, false),
+                TaskViewData("2", "Academia", "Treino de pernas e 30 minutos de cardio.", PRIORITY_LOW, true)
             ),
             isLoading = false,
             selectedFilter = TaskFilter.ALL,
             onFilterChange = {},
             onAddTaskClick = {},
             onTaskCheckedChange = { _, _ -> },
-            snackbarHostState = remember { SnackbarHostState() }
+            onDeleteTask = {},
+            onEditTask = {}
         )
     }
 }
@@ -262,7 +284,8 @@ private fun HomeScreenDarkPreview() {
             onFilterChange = {},
             onAddTaskClick = {},
             onTaskCheckedChange = { _, _ -> },
-            snackbarHostState = remember { SnackbarHostState() }
+            onDeleteTask = {},
+            onEditTask = {}
         )
     }
 }

@@ -2,6 +2,10 @@ package com.marcelo.souza.listadetarefas.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
+import com.marcelo.souza.listadetarefas.domain.model.DataError
 import com.marcelo.souza.listadetarefas.domain.model.HomeUiState
 import com.marcelo.souza.listadetarefas.domain.model.TaskFilter
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
@@ -24,16 +28,23 @@ class HomeViewModel(
     private val _selectedFilter = MutableStateFlow(TaskFilter.ALL)
     val selectedFilter = _selectedFilter.asStateFlow()
 
+    private val _dialogError = MutableStateFlow<DataError?>(null)
+    val dialogError = _dialogError.asStateFlow()
+
     init {
         fetchTasks()
     }
 
     fun fetchTasks() {
         viewModelScope.launch {
+            _dialogError.value = null
             _uiState.value = HomeUiState.Loading
             _uiState.value = when (val result = repository.getTasks()) {
                 is TaskResultViewData.Success -> HomeUiState.Success(result.data)
-                is TaskResultViewData.Error -> HomeUiState.Error(result.error)
+                is TaskResultViewData.Error -> {
+                    _dialogError.value = result.error
+                    HomeUiState.Error(result.error)
+                }
             }
         }
     }
@@ -46,15 +57,12 @@ class HomeViewModel(
         if (task.id.isBlank()) return
 
         viewModelScope.launch {
-            when (repository.updateTaskCompletion(task.id, isChecked)) {
+            when (val result = repository.updateTaskCompletion(task.id, isChecked)) {
                 is TaskResultViewData.Success -> {
+                    _dialogError.value = null
                     _uiState.update { state ->
                         if (state is HomeUiState.Success) {
-                            state.copy(
-                                tasks = state.tasks.map {
-                                    if (it.id == task.id) it.copy(isCompleted = isChecked) else it
-                                }
-                            )
+                            state.copy(tasks = state.tasks.map { if (it.id == task.id) it.copy(isCompleted = isChecked) else it })
                         } else {
                             state
                         }
@@ -62,9 +70,65 @@ class HomeViewModel(
                 }
 
                 is TaskResultViewData.Error -> {
-                    fetchTasks()
+                    _dialogError.value = result.error
                 }
             }
+        }
+    }
+
+    fun onEditTask(task: TaskViewData) {
+        if (task.id.isBlank()) return
+
+        val editedTask = task.copy(priority = task.priority.nextPriority())
+
+        viewModelScope.launch {
+            when (val result = repository.updateTask(editedTask)) {
+                is TaskResultViewData.Success -> {
+                    _dialogError.value = null
+                    _uiState.update { state ->
+                        if (state is HomeUiState.Success) {
+                            state.copy(tasks = state.tasks.map { if (it.id == editedTask.id) editedTask else it })
+                        } else {
+                            state
+                        }
+                    }
+                }
+
+                is TaskResultViewData.Error -> _dialogError.value = result.error
+            }
+        }
+    }
+
+    fun onDeleteTask(task: TaskViewData) {
+        if (task.id.isBlank()) return
+
+        viewModelScope.launch {
+            when (val result = repository.deleteTask(task.id)) {
+                is TaskResultViewData.Success -> {
+                    _dialogError.value = null
+                    _uiState.update { state ->
+                        if (state is HomeUiState.Success) {
+                            state.copy(tasks = state.tasks.filterNot { it.id == task.id })
+                        } else {
+                            state
+                        }
+                    }
+                }
+
+                is TaskResultViewData.Error -> _dialogError.value = result.error
+            }
+        }
+    }
+
+    fun dismissErrorDialog() {
+        _dialogError.value = null
+    }
+
+    private fun String.nextPriority(): String {
+        return when (this) {
+            PRIORITY_HIGH -> PRIORITY_MEDIUM
+            PRIORITY_MEDIUM -> PRIORITY_LOW
+            else -> PRIORITY_HIGH
         }
     }
 }
