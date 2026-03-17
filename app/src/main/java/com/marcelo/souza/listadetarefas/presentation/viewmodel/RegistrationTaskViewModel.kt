@@ -9,7 +9,7 @@ import com.marcelo.souza.listadetarefas.domain.model.RegistrationUiState
 import com.marcelo.souza.listadetarefas.domain.model.TaskPriorityEnum
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
-import com.marcelo.souza.listadetarefas.domain.model.UiEvent // Certifique-se de que este enum/sealed class está acessível
+import com.marcelo.souza.listadetarefas.domain.model.UiEvent
 import com.marcelo.souza.listadetarefas.domain.repository.TaskRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +41,8 @@ class RegistrationTaskViewModel(
     fun onPriorityChange(newValue: TaskPriorityEnum) { selectedPriority = newValue }
 
     fun saveTask() {
+        if (_uiState.value is RegistrationUiState.Loading || title.trim().isBlank()) return
+
         viewModelScope.launch {
             _uiEvent.send(UiEvent.HideKeyboard)
             _uiState.value = RegistrationUiState.Loading

@@ -21,9 +21,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -41,6 +43,7 @@ import com.marcelo.souza.listadetarefas.domain.model.UiEvent
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryTopBar
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskSuccessFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.utils.toColor
@@ -55,9 +58,13 @@ fun RegistrationTaskScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val isButtonEnabled = viewModel.title.isNotBlank() && uiState !is RegistrationUiState.Loading
+    val isButtonEnabled by remember(viewModel.title, uiState) {
+        derivedStateOf {
+            viewModel.title.trim().isNotBlank() && uiState !is RegistrationUiState.Loading
+        }
+    }
 
-    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by rememberSaveable { mutableStateOf(false) }
     var errorToDisplay by remember { mutableStateOf<DataError?>(null) }
 
     LaunchedEffect(Unit) {
@@ -94,7 +101,12 @@ fun RegistrationTaskScreen(
     }
 
     errorToDisplay?.let { error ->
-
+        TaskErrorFancyDialog(
+            title = stringResource(R.string.title_error_dialog_registration_task),
+            message = stringResource(error.toMessageRes()),
+            onConfirmClick = { errorToDisplay = null },
+            onDismissRequest = { errorToDisplay = null }
+        )
     }
 
     RegistrationTaskContent(
@@ -109,6 +121,12 @@ fun RegistrationTaskScreen(
         isLoading = uiState is RegistrationUiState.Loading,
         isSaveButtonEnabled = isButtonEnabled
     )
+}
+
+private fun DataError.toMessageRes(): Int = when (this) {
+    is DataError.Network -> R.string.message_error_dialog_registration_task_network
+    is DataError.Permission -> R.string.message_error_dialog_registration_task_permission
+    is DataError.Unknown -> R.string.message_error_dialog_registration_task_unknown
 }
 
 @Composable
