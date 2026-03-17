@@ -35,7 +35,16 @@
     <string name="message_error_dialog_registration_task_network">Parece que houve um problema de conexão. Verifique sua internet e tente novamente.</string>
     <string name="message_error_dialog_registration_task_permission">Você não tem permissão para salvar esta tarefa no momento.</string>
     <string name="message_error_dialog_registration_task_unknown">Ocorreu um erro inesperado ao salvar a tarefa. Tente novamente em instantes.</string>
-    <string name="title_button_error_dialog_registration_task">Entendi</string>
+    <string name="title_button_positive_error_dialog_registration_task">Tentar novamente</string>
+    <string name="title_button_negative_error_dialog_registration_task">Cancelar</string>
+
+    <string name="filter_all">Todas</string>
+    <string name="filter_pending">Pendentes</string>
+    <string name="filter_completed">Concluídas</string>
+    <string name="empty_tasks_title">Nenhuma tarefa encontrada</string>
+    <string name="empty_tasks_description">Adicione sua primeira tarefa ou ajuste o filtro para visualizar outros itens.</string>
+    <string name="task_completed">Concluída</string>
+    <string name="task_pending">Pendente</string>
 
     <string name="task_priority_high">Alta</string>
     <string name="task_priority_medium">Média</string>

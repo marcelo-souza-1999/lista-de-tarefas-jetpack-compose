@@ -15,9 +15,9 @@ import com.patrik.fancycomposedialogs.properties.DialogButtonProperties
 fun TaskErrorFancyDialog(
     title: String,
     message: String,
-    buttonTextRes: Int = R.string.title_button_error_dialog_registration_task,
     isCancelable: Boolean = true,
-    onConfirmClick: () -> Unit,
+    onRetryClick: () -> Unit,
+    onCancelClick: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
     ErrorFancyDialog(
@@ -26,17 +26,16 @@ fun TaskErrorFancyDialog(
         showMessage = true,
         message = message,
         isCancelable = isCancelable,
-        dialogActionType = DialogActionType.INFORMATIVE,
+        dialogActionType = DialogActionType.ACTIONABLE,
         dialogProperties = DialogButtonProperties(
-            neutralButtonText = buttonTextRes,
+            positiveButtonText = R.string.title_button_positive_error_dialog_registration_task,
+            negativeButtonText = R.string.title_button_negative_error_dialog_registration_task,
             buttonColor = MaterialTheme.colorScheme.error,
             buttonTextColor = Color.White
         ),
         dialogStyle = DialogStyle.UPPER_CUTTING,
-        neutralButtonClick = {
-            onConfirmClick()
-            onDismissRequest()
-        },
+        positiveButtonClick = onRetryClick,
+        negativeButtonClick = onCancelClick,
         dismissTouchOutside = onDismissRequest
     )
 }
@@ -48,7 +47,8 @@ internal fun TaskErrorFancyDialogPreview() {
         TaskErrorFancyDialog(
             title = "Ops, algo deu errado!",
             message = "Não foi possível salvar sua tarefa. Tente novamente.",
-            onConfirmClick = {},
+            onRetryClick = {},
+            onCancelClick = {},
             onDismissRequest = {}
         )
     }

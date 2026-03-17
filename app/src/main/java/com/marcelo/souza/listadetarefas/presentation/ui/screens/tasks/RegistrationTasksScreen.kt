@@ -42,8 +42,8 @@ import com.marcelo.souza.listadetarefas.domain.model.UiEvent
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
-import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryTopBar
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskSuccessFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.utils.toColor
 import com.marcelo.souza.listadetarefas.presentation.viewmodel.RegistrationTaskViewModel
@@ -75,15 +75,9 @@ fun RegistrationTaskScreen(
     }
 
     LaunchedEffect(uiState) {
-        when (uiState) {
-            is RegistrationUiState.Success -> {
-                showSuccessDialog = true
-            }
-
-            is RegistrationUiState.Error -> {
-                errorToDisplay = (uiState as RegistrationUiState.Error).error
-            }
-
+        when (val state = uiState) {
+            is RegistrationUiState.Success -> showSuccessDialog = true
+            is RegistrationUiState.Error -> errorToDisplay = state.error
             else -> Unit
         }
     }
@@ -92,10 +86,8 @@ fun RegistrationTaskScreen(
         TaskSuccessFancyDialog(
             title = stringResource(R.string.title_success_dialog_registration_task),
             message = stringResource(R.string.message_success_dialog_registration_task),
-            onConfirmClick = {
-                onBackClick()
-            },
-            onDismissRequest = { onBackClick() }
+            onConfirmClick = onBackClick,
+            onDismissRequest = onBackClick
         )
     }
 
@@ -103,8 +95,19 @@ fun RegistrationTaskScreen(
         TaskErrorFancyDialog(
             title = stringResource(R.string.title_error_dialog_registration_task),
             message = stringResource(error.toMessageRes()),
-            onConfirmClick = { errorToDisplay = null },
-            onDismissRequest = { errorToDisplay = null }
+            onRetryClick = {
+                errorToDisplay = null
+                viewModel.clearErrorState()
+                viewModel.saveTask()
+            },
+            onCancelClick = {
+                errorToDisplay = null
+                viewModel.clearErrorState()
+            },
+            onDismissRequest = {
+                errorToDisplay = null
+                viewModel.clearErrorState()
+            }
         )
     }
 
@@ -115,7 +118,7 @@ fun RegistrationTaskScreen(
         onDescriptionChange = viewModel::onDescriptionChange,
         selectedTaskPriorityEnum = viewModel.selectedPriority,
         onPrioritySelect = viewModel::onPriorityChange,
-        onSaveClick = { viewModel.saveTask() },
+        onSaveClick = viewModel::saveTask,
         onBackClick = onBackClick,
         isLoading = uiState is RegistrationUiState.Loading,
         isSaveButtonEnabled = isButtonEnabled

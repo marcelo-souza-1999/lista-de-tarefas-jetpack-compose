@@ -36,9 +36,17 @@ class RegistrationTaskViewModel(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    fun onTitleChange(newValue: String) { title = newValue }
-    fun onDescriptionChange(newValue: String) { description = newValue }
-    fun onPriorityChange(newValue: TaskPriorityEnum) { selectedPriority = newValue }
+    fun onTitleChange(newValue: String) {
+        title = newValue
+    }
+
+    fun onDescriptionChange(newValue: String) {
+        description = newValue
+    }
+
+    fun onPriorityChange(newValue: TaskPriorityEnum) {
+        selectedPriority = newValue
+    }
 
     fun saveTask() {
         if (_uiState.value is RegistrationUiState.Loading || title.trim().isBlank()) return
@@ -51,18 +59,21 @@ class RegistrationTaskViewModel(
                 TaskViewData(
                     title = title.trim(),
                     description = description.trim(),
-                    priority = selectedPriority.name
+                    priority = selectedPriority.name,
+                    isCompleted = false
                 )
             )
 
-            when (result) {
-                is TaskResultViewData.Success -> {
-                    _uiState.value = RegistrationUiState.Success
-                }
-                is TaskResultViewData.Error -> {
-                    _uiState.value = RegistrationUiState.Error(result.error)
-                }
+            _uiState.value = when (result) {
+                is TaskResultViewData.Success -> RegistrationUiState.Success
+                is TaskResultViewData.Error -> RegistrationUiState.Error(result.error)
             }
+        }
+    }
+
+    fun clearErrorState() {
+        if (_uiState.value is RegistrationUiState.Error) {
+            _uiState.value = RegistrationUiState.Idle
         }
     }
 }
