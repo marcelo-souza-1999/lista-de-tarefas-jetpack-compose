@@ -10,6 +10,9 @@ import com.marcelo.souza.listadetarefas.data.utils.Constants.EMPTY_ID
 import com.marcelo.souza.listadetarefas.data.utils.Constants.FIELD_IS_COMPLETED
 import com.marcelo.souza.listadetarefas.domain.model.DataError
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import org.koin.core.annotation.Single
 
@@ -27,19 +30,29 @@ class TaskDataSourceImpl(
         }
     }
 
-    override suspend fun getTasks(): TaskResultViewData<List<TaskDto>> {
-        return try {
-            val snapshot = firestore.collection(COLLECTION_NAME).get().await()
-            val tasks = snapshot.documents.mapNotNull { document ->
-                document.toObject(TaskDto::class.java)?.copy(id = document.id)
+    override fun getTasks(): Flow<TaskResultViewData<List<TaskDto>>> = callbackFlow {
+        val listenerRegistration = firestore.collection(COLLECTION_NAME)
+            .addSnapshotListener { snapshot, error ->
+                if (snapshot != null) {
+                    val tasks = snapshot.documents.mapNotNull { document ->
+                        document.toObject(TaskDto::class.java)?.copy(id = document.id)
+                    }
+                    trySend(TaskResultViewData.Success(tasks))
+                }
+
+                if (error != null) {
+                    trySend(TaskResultViewData.Error(mapFirebaseError(error)))
+                    return@addSnapshotListener
+                }
             }
-            TaskResultViewData.Success(tasks)
-        } catch (e: Exception) {
-            TaskResultViewData.Error(mapFirebaseError(e))
-        }
+
+        awaitClose { listenerRegistration.remove() }
     }
 
-    override suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): TaskResultViewData<Boolean> {
+    override suspend fun updateTaskCompletion(
+        taskId: String,
+        isCompleted: Boolean
+    ): TaskResultViewData<Boolean> {
         return try {
             firestore.collection(COLLECTION_NAME)
                 .document(taskId)
@@ -82,8 +95,10 @@ class TaskDataSourceImpl(
                 when (e.code) {
                     FirebaseFirestoreException.Code.UNAUTHENTICATED,
                     FirebaseFirestoreException.Code.PERMISSION_DENIED -> DataError.Permission()
+
                     FirebaseFirestoreException.Code.UNAVAILABLE,
                     FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> DataError.Network()
+
                     else -> DataError.Unknown()
                 }
             }

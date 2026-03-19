@@ -4,7 +4,7 @@ object Constants {
     const val COLLECTION_NAME = "tasks"
 
     const val EMPTY_ID = ""
-    const val FIELD_IS_COMPLETED = "isCompleted"
+    const val FIELD_IS_COMPLETED = "completed"
 
     const val PRIORITY_HIGH = "HIGH"
     const val PRIORITY_MEDIUM = "MEDIUM"

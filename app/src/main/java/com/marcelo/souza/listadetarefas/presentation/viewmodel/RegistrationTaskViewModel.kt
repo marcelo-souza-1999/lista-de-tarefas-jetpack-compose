@@ -1,8 +1,5 @@
 package com.marcelo.souza.listadetarefas.presentation.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.marcelo.souza.listadetarefas.domain.model.RegistrationUiState
@@ -11,6 +8,7 @@ import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.domain.model.UiEvent
 import com.marcelo.souza.listadetarefas.domain.repository.TaskRepository
+import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,57 +21,111 @@ class RegistrationTaskViewModel(
     private val repository: TaskRepository
 ) : ViewModel() {
 
-    var title by mutableStateOf("")
-        private set
-    var description by mutableStateOf("")
-        private set
-    var selectedPriority by mutableStateOf(TaskPriorityEnum.LOW)
-        private set
-
-    private val _uiState = MutableStateFlow<RegistrationUiState>(RegistrationUiState.Idle)
+    private val _uiState = MutableStateFlow(RegistrationUiState())
     val uiState = _uiState.asStateFlow()
 
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    private val _navigationEvent = Channel<NavigationEvent>()
+    val navigationEvent = _navigationEvent.receiveAsFlow()
+
     fun onTitleChange(newValue: String) {
-        title = newValue
+        _uiState.value = _uiState.value.copy(title = newValue)
     }
 
     fun onDescriptionChange(newValue: String) {
-        description = newValue
+        _uiState.value = _uiState.value.copy(description = newValue)
     }
 
     fun onPriorityChange(newValue: TaskPriorityEnum) {
-        selectedPriority = newValue
+        _uiState.value = _uiState.value.copy(selectedPriority = newValue)
+    }
+
+    fun onBackClicked() {
+        viewModelScope.launch {
+            _navigationEvent.send(NavigationEvent.NavigateBack)
+        }
+    }
+
+    fun loadTask(task: TaskViewData) {
+        _uiState.value = _uiState.value.copy(
+            title = task.title,
+            description = task.description,
+            selectedPriority = TaskPriorityEnum.valueOf(task.priority),
+            isEditing = true,
+            taskId = task.id,
+            isCompleted = task.isCompleted
+        )
     }
 
     fun saveTask() {
-        if (_uiState.value is RegistrationUiState.Loading || title.trim().isBlank()) return
+        val currentState = _uiState.value
+
+        if (currentState.isLoading || currentState.title.trim().isBlank()) return
 
         viewModelScope.launch {
             _uiEvent.send(UiEvent.HideKeyboard)
-            _uiState.value = RegistrationUiState.Loading
 
-            val result = repository.saveTask(
-                TaskViewData(
-                    title = title.trim(),
-                    description = description.trim(),
-                    priority = selectedPriority.name,
-                    isCompleted = false
-                )
+            _uiState.value = currentState.copy(
+                isLoading = true,
+                error = null
             )
 
+            val result = if (currentState.isEditing) {
+                repository.updateTask(
+                    TaskViewData(
+                        id = currentState.taskId,
+                        title = currentState.title,
+                        description = currentState.description,
+                        priority = currentState.selectedPriority.name,
+                        isCompleted = currentState.isCompleted
+                    )
+                )
+            } else {
+                repository.saveTask(
+                    TaskViewData(
+                        title = currentState.title.trim(),
+                        description = currentState.description.trim(),
+                        priority = currentState.selectedPriority.name,
+                        isCompleted = currentState.isCompleted
+                    )
+                )
+            }
+
             _uiState.value = when (result) {
-                is TaskResultViewData.Success -> RegistrationUiState.Success
-                is TaskResultViewData.Error -> RegistrationUiState.Error(result.error)
+                is TaskResultViewData.Success -> {
+                    currentState.copy(
+                        isLoading = false,
+                        showSuccessDialog = true
+                    )
+                }
+
+                is TaskResultViewData.Error -> {
+                    currentState.copy(
+                        isLoading = false,
+                        error = result.error
+                    )
+                }
             }
         }
     }
 
-    fun clearErrorState() {
-        if (_uiState.value is RegistrationUiState.Error) {
-            _uiState.value = RegistrationUiState.Idle
+    fun onSuccessConfirmed() {
+        viewModelScope.launch {
+            _navigationEvent.send(NavigationEvent.NavigateBack)
         }
+    }
+
+    fun dismissError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun dismissSuccessDialog() {
+        _uiState.value = _uiState.value.copy(showSuccessDialog = false)
+    }
+
+    fun resetForm() {
+        _uiState.value = RegistrationUiState()
     }
 }

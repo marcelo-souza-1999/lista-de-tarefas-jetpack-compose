@@ -1,5 +1,8 @@
 package com.marcelo.souza.listadetarefas.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class TaskViewData(
     val id: String = "",
     val title: String,
@@ -7,15 +10,3 @@ data class TaskViewData(
     val priority: String,
     val isCompleted: Boolean = false
 )
-
-enum class TaskFilter {
-    ALL,
-    PENDING,
-    COMPLETED
-}
-
-sealed class HomeUiState {
-    object Loading : HomeUiState()
-    data class Success(val tasks: List<TaskViewData>) : HomeUiState()
-    data class Error(val error: DataError) : HomeUiState()
-}

@@ -6,6 +6,8 @@ import com.marcelo.souza.listadetarefas.data.mapper.toDto
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.domain.repository.TaskRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
 
 @Single
@@ -17,14 +19,19 @@ class TaskRepositoryImpl(
         return taskDataSource.saveTask(task.toDto())
     }
 
-    override suspend fun getTasks(): TaskResultViewData<List<TaskViewData>> {
-        return when (val result = taskDataSource.getTasks()) {
-            is TaskResultViewData.Success -> TaskResultViewData.Success(result.data.map { it.toDomain() })
-            is TaskResultViewData.Error -> TaskResultViewData.Error(result.error)
+    override fun getTasks(): Flow<TaskResultViewData<List<TaskViewData>>> {
+        return taskDataSource.getTasks().map { result ->
+            when (result) {
+                is TaskResultViewData.Success -> TaskResultViewData.Success(result.data.map { it.toDomain() })
+                is TaskResultViewData.Error -> TaskResultViewData.Error(result.error)
+            }
         }
     }
 
-    override suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): TaskResultViewData<Boolean> {
+    override suspend fun updateTaskCompletion(
+        taskId: String,
+        isCompleted: Boolean
+    ): TaskResultViewData<Boolean> {
         return taskDataSource.updateTaskCompletion(taskId, isCompleted)
     }
 

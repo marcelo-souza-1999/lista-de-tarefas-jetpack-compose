@@ -21,11 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -35,10 +31,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcelo.souza.listadetarefas.R
-import com.marcelo.souza.listadetarefas.domain.model.DataError
-import com.marcelo.souza.listadetarefas.domain.model.RegistrationUiState
 import com.marcelo.souza.listadetarefas.domain.model.TaskPriorityEnum
+import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.domain.model.UiEvent
+import com.marcelo.souza.listadetarefas.presentation.navigation.AppNavigator
+import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
@@ -46,25 +43,26 @@ import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryTopB
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskSuccessFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.utils.toColor
+import com.marcelo.souza.listadetarefas.presentation.utils.toMessageRes
 import com.marcelo.souza.listadetarefas.presentation.viewmodel.RegistrationTaskViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun RegistrationTaskScreen(
-    onBackClick: () -> Unit,
+    navigator: AppNavigator,
+    task: TaskViewData? = null,
     viewModel: RegistrationTaskViewModel = koinViewModel()
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val isButtonEnabled by remember(viewModel.title, uiState) {
-        derivedStateOf {
-            viewModel.title.trim().isNotBlank() && uiState !is RegistrationUiState.Loading
+    val isButtonEnabled = uiState.title.isNotBlank() && !uiState.isLoading
+
+    LaunchedEffect(task) {
+        task?.let {
+            viewModel.loadTask(it)
         }
     }
-
-    var showSuccessDialog by remember { mutableStateOf(false) }
-    var errorToDisplay by remember { mutableStateOf<DataError?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
@@ -74,66 +72,77 @@ fun RegistrationTaskScreen(
         }
     }
 
-    LaunchedEffect(uiState) {
-        when (val state = uiState) {
-            is RegistrationUiState.Success -> showSuccessDialog = true
-            is RegistrationUiState.Error -> errorToDisplay = state.error
-            else -> Unit
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is NavigationEvent.Navigate -> navigator.navigate(event.route)
+                NavigationEvent.NavigateBack -> navigator.navigateBack()
+            }
         }
     }
 
-    if (showSuccessDialog) {
-        TaskSuccessFancyDialog(
-            title = stringResource(R.string.title_success_dialog_registration_task),
-            message = stringResource(R.string.message_success_dialog_registration_task),
-            onConfirmClick = onBackClick,
-            onDismissRequest = onBackClick
-        )
-    }
+    if (uiState.showSuccessDialog) {
+        val title = if (uiState.isEditing)
+            stringResource(R.string.title_success_dialog_edit_task)
+        else
+            stringResource(R.string.title_success_dialog_registration_task)
 
-    errorToDisplay?.let { error ->
-        TaskErrorFancyDialog(
-            title = stringResource(R.string.title_error_dialog_registration_task),
-            message = stringResource(error.toMessageRes()),
-            onRetryClick = {
-                errorToDisplay = null
-                viewModel.clearErrorState()
-                viewModel.saveTask()
-            },
-            onCancelClick = {
-                errorToDisplay = null
-                viewModel.clearErrorState()
+        val message = if (uiState.isEditing)
+            stringResource(R.string.message_success_dialog_edit_task)
+        else
+            stringResource(R.string.message_success_dialog_registration_task)
+
+        TaskSuccessFancyDialog(
+            title = title,
+            message = message,
+            isCancelable = false,
+            onConfirmClick = {
+                viewModel.resetForm()
+                viewModel.onSuccessConfirmed()
             },
             onDismissRequest = {
-                errorToDisplay = null
-                viewModel.clearErrorState()
+                viewModel.dismissSuccessDialog()
             }
         )
     }
 
+    uiState.error?.let { error ->
+        TaskErrorFancyDialog(
+            title = stringResource(R.string.title_error_dialog_registration_task),
+            message = stringResource(error.toMessageRes()),
+            onRetryClick = {
+                viewModel.dismissError()
+                viewModel.saveTask()
+            },
+            onCancelClick = viewModel::dismissError,
+            onDismissRequest = viewModel::dismissError
+        )
+    }
+
+    val titleTopBar = if (uiState.isEditing)
+        stringResource(R.string.title_topbar_registration_edit_tasks)
+    else
+        stringResource(R.string.title_topbar_registration_tasks)
+
     RegistrationTaskContent(
-        title = viewModel.title,
+        title = uiState.title,
+        titleTopBar = titleTopBar,
         onTitleChange = viewModel::onTitleChange,
-        description = viewModel.description,
+        description = uiState.description,
         onDescriptionChange = viewModel::onDescriptionChange,
-        selectedTaskPriorityEnum = viewModel.selectedPriority,
+        selectedTaskPriorityEnum = uiState.selectedPriority,
         onPrioritySelect = viewModel::onPriorityChange,
         onSaveClick = viewModel::saveTask,
-        onBackClick = onBackClick,
-        isLoading = uiState is RegistrationUiState.Loading,
+        onBackClick = viewModel::onBackClicked,
+        isLoading = uiState.isLoading,
         isSaveButtonEnabled = isButtonEnabled
     )
-}
-
-private fun DataError.toMessageRes(): Int = when (this) {
-    is DataError.Network -> R.string.message_error_dialog_registration_task_network
-    is DataError.Permission -> R.string.message_error_dialog_registration_task_permission
-    is DataError.Unknown -> R.string.message_error_dialog_registration_task_unknown
 }
 
 @Composable
 private fun RegistrationTaskContent(
     title: String,
+    titleTopBar: String,
     onTitleChange: (String) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
@@ -145,7 +154,7 @@ private fun RegistrationTaskContent(
     isSaveButtonEnabled: Boolean
 ) {
     val dimens = LocalDimens.current
-    val priorities = remember { TaskPriorityEnum.entries }
+    val priorities = TaskPriorityEnum.entries
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -156,7 +165,7 @@ private fun RegistrationTaskContent(
                 modifier = Modifier.statusBarsPadding()
             ) {
                 SecondaryTopBar(
-                    title = stringResource(R.string.title_topbar_registration_tasks),
+                    title = titleTopBar,
                     onBackClick = onBackClick
                 )
             }
@@ -183,6 +192,7 @@ private fun RegistrationTaskContent(
                 .padding(horizontal = dimens.size24),
             verticalArrangement = Arrangement.spacedBy(dimens.size16)
         ) {
+
             Spacer(modifier = Modifier.height(dimens.size8))
 
             OutlinedTextField(
@@ -216,8 +226,7 @@ private fun RegistrationTaskContent(
             Text(
                 text = stringResource(R.string.title_priority_register_task_label),
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontWeight = FontWeight.Bold
                 )
             )
 
@@ -227,27 +236,21 @@ private fun RegistrationTaskContent(
             ) {
                 priorities.forEach { priority ->
                     val isSelected = selectedTaskPriorityEnum == priority
-                    val priorityColor = priority.toColor()
+                    val color = priority.toColor()
 
                     FilterChip(
                         selected = isSelected,
                         onClick = { onPrioritySelect(priority) },
                         label = {
                             Text(
-                                text = stringResource(id = priority.labelResId),
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else priorityColor
+                                text = stringResource(priority.labelResId),
+                                color = if (isSelected)
+                                    MaterialTheme.colorScheme.onPrimary
+                                else color
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = priorityColor,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = priorityColor,
-                            selectedBorderColor = priorityColor,
-                            borderWidth = dimens.size1
+                            selectedContainerColor = color
                         )
                     )
                 }
@@ -256,12 +259,33 @@ private fun RegistrationTaskContent(
     }
 }
 
-@Preview(name = "Add Task Light", showBackground = true)
+@Preview(showBackground = true)
 @Composable
-private fun RegistrationTaskScreenPreview() {
-    ListaDeTarefasTheme(darkTheme = false) {
+private fun PreviewLight() {
+    ListaDeTarefasTheme {
+        RegistrationTaskContent(
+            title = "Nova Task",
+            titleTopBar = stringResource(R.string.title_topbar_registration_edit_tasks),
+            onTitleChange = {},
+            description = "Descrição",
+            onDescriptionChange = {},
+            selectedTaskPriorityEnum = TaskPriorityEnum.HIGH,
+            onPrioritySelect = {},
+            onSaveClick = {},
+            onBackClick = {},
+            isLoading = false,
+            isSaveButtonEnabled = true
+        )
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewDark() {
+    ListaDeTarefasTheme(darkTheme = true) {
         RegistrationTaskContent(
             title = "",
+            titleTopBar = stringResource(R.string.title_topbar_registration_tasks),
             onTitleChange = {},
             description = "",
             onDescriptionChange = {},
@@ -269,27 +293,8 @@ private fun RegistrationTaskScreenPreview() {
             onPrioritySelect = {},
             onSaveClick = {},
             onBackClick = {},
-            isSaveButtonEnabled = false,
-            isLoading = false
-        )
-    }
-}
-
-@Preview(name = "Add Task Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun RegistrationTaskScreenDarkPreview() {
-    ListaDeTarefasTheme(darkTheme = true) {
-        RegistrationTaskContent(
-            title = "Aprender ViewModel",
-            onTitleChange = {},
-            description = "Estudar os conceitos de StateFlow e UiState",
-            onDescriptionChange = {},
-            selectedTaskPriorityEnum = TaskPriorityEnum.HIGH,
-            onPrioritySelect = {},
-            onSaveClick = {},
-            onBackClick = {},
-            isSaveButtonEnabled = true,
-            isLoading = true
+            isLoading = false,
+            isSaveButtonEnabled = false
         )
     }
 }

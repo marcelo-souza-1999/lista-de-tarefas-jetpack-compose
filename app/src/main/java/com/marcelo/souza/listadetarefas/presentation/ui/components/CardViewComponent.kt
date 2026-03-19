@@ -2,7 +2,6 @@ package com.marcelo.souza.listadetarefas.presentation.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,8 +37,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.marcelo.souza.listadetarefas.R
 import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
 import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.presentation.theme.AppTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.EditBlue
@@ -53,7 +52,6 @@ import com.marcelo.souza.listadetarefas.presentation.theme.PriorityMedium
 fun TaskCard(
     task: TaskViewData,
     onCheckedChange: (Boolean) -> Unit,
-    onTaskClick: (TaskViewData) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -74,8 +72,7 @@ fun TaskCard(
 
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .clickable { onTaskClick(task) },
+            .fillMaxWidth(),
         shape = RoundedCornerShape(dimens.size24),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = dimens.size0)
@@ -129,13 +126,19 @@ fun TaskCard(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (task.isCompleted) stringResource(R.string.task_completed) else stringResource(R.string.task_pending),
+                        text = if (task.isCompleted) stringResource(R.string.task_completed) else stringResource(
+                            R.string.task_pending
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (task.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.padding(end = dimens.size8)
                     )
                     IconButton(onClick = onEditClick, modifier = Modifier.size(dimens.size32)) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = EditBlue)
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = EditBlue
+                        )
                     }
                     IconButton(onClick = onDeleteClick, modifier = Modifier.size(dimens.size32)) {
                         Icon(
@@ -156,8 +159,13 @@ internal fun TaskCardLightPreview() {
     ListaDeTarefasTheme(darkTheme = false) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.padding(24.dp)) {
             TaskCard(
-                task = TaskViewData("1", "Fazer Café", "Comprar grãos novos e passar um café fresquinho.", PRIORITY_LOW, false),
-                onTaskClick = {},
+                task = TaskViewData(
+                    "1",
+                    "Fazer Café",
+                    "Comprar grãos novos e passar um café fresquinho.",
+                    PRIORITY_LOW,
+                    false
+                ),
                 onCheckedChange = {},
                 onEditClick = {},
                 onDeleteClick = {}
@@ -172,8 +180,13 @@ internal fun TaskCardDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.padding(24.dp)) {
             TaskCard(
-                task = TaskViewData("1", "Refatorar Cores", "Agora as cores estão centralizadas no arquivo Color.kt como solicitado.", PRIORITY_HIGH, true),
-                onTaskClick = {},
+                task = TaskViewData(
+                    "1",
+                    "Refatorar Cores",
+                    "Agora as cores estão centralizadas no arquivo Color.kt como solicitado.",
+                    PRIORITY_HIGH,
+                    true
+                ),
                 onCheckedChange = {},
                 onEditClick = {},
                 onDeleteClick = {}

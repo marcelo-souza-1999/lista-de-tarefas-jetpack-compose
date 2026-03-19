@@ -9,7 +9,7 @@ fun TaskDto.toDomain(): TaskViewData {
         title = title,
         description = description,
         priority = priority,
-        isCompleted = isCompleted
+        isCompleted = completed
     )
 }
 
@@ -19,6 +19,6 @@ fun TaskViewData.toDto(): TaskDto {
         title = title,
         description = description,
         priority = priority,
-        isCompleted = isCompleted
+        completed = isCompleted
     )
 }

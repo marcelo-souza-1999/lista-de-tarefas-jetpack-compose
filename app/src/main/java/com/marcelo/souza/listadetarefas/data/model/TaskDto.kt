@@ -5,5 +5,5 @@ data class TaskDto(
     val title: String = "",
     val description: String = "",
     val priority: String = "",
-    val isCompleted: Boolean = false
+    val completed: Boolean = false
 )

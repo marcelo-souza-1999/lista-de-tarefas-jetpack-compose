@@ -22,6 +22,7 @@
     <string name="home_greeting">Olá,</string>
 
     <string name="title_topbar_registration_tasks">Nova Tarefa</string>
+    <string name="title_topbar_registration_edit_tasks">Editar Tarefa</string>
     <string name="register_tasks_button_text">Salvar Tarefa</string>
     <string name="title_register_task_label">Título da Tarefa</string>
     <string name="description_register_task_label">Descrição da Tarefa</string>
@@ -42,6 +43,11 @@
     <string name="delete_task_dialog_message">Deseja realmente excluir a tarefa "%1$s"?</string>
     <string name="title_button_delete_confirm">Excluir</string>
     <string name="title_button_cancel_delete_confirm">Cancelar</string>
+
+    <string name="title_success_dialog_edit_task">Tarefa atualizada!</string>
+    <string name="message_success_dialog_edit_task">
+    Sua tarefa foi atualizada com sucesso.
+    </string>
 
     <string name="filter_all">Todas</string>
     <string name="filter_pending">Pendentes</string>

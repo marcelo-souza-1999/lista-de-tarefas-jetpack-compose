@@ -2,18 +2,21 @@ package com.marcelo.souza.listadetarefas.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
 import com.marcelo.souza.listadetarefas.domain.model.DataError
 import com.marcelo.souza.listadetarefas.domain.model.HomeUiState
 import com.marcelo.souza.listadetarefas.domain.model.TaskFilter
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.domain.repository.TaskRepository
+import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
+import com.marcelo.souza.listadetarefas.presentation.navigation.model.RegistrationTaskKey
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 
@@ -21,114 +24,93 @@ import org.koin.android.annotation.KoinViewModel
 class HomeViewModel(
     private val repository: TaskRepository
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState = _uiState.asStateFlow()
-
     private val _selectedFilter = MutableStateFlow(TaskFilter.ALL)
     val selectedFilter = _selectedFilter.asStateFlow()
 
     private val _dialogError = MutableStateFlow<DataError?>(null)
     val dialogError = _dialogError.asStateFlow()
 
-    init {
-        fetchTasks()
-    }
+    private val _taskPendingDelete = MutableStateFlow<TaskViewData?>(null)
+    val taskPendingDelete = _taskPendingDelete.asStateFlow()
 
-    fun fetchTasks() {
-        viewModelScope.launch {
-            _dialogError.value = null
-            _uiState.value = HomeUiState.Loading
-            _uiState.value = when (val result = repository.getTasks()) {
-                is TaskResultViewData.Success -> HomeUiState.Success(result.data)
-                is TaskResultViewData.Error -> {
-                    _dialogError.value = result.error
-                    HomeUiState.Error(result.error)
+    private val _navigationEvent = Channel<NavigationEvent>()
+    val navigationEvent = _navigationEvent.receiveAsFlow()
+
+    private val _tasksFlow = repository.getTasks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = TaskResultViewData.Success(emptyList())
+        )
+
+    val uiState = combine(_tasksFlow, _selectedFilter) { result, filter ->
+        when (result) {
+            is TaskResultViewData.Error -> HomeUiState.Error(result.error)
+            is TaskResultViewData.Success -> {
+                val filteredList = when (filter) {
+                    TaskFilter.ALL -> result.data
+                    TaskFilter.PENDING -> result.data.filter { !it.isCompleted }
+                    TaskFilter.COMPLETED -> result.data.filter { it.isCompleted }
                 }
+                HomeUiState.Success(filteredList)
             }
         }
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = HomeUiState.Loading
+    )
 
     fun onFilterChange(filter: TaskFilter) {
         _selectedFilter.value = filter
     }
 
     fun onTaskCheckedChange(task: TaskViewData, isChecked: Boolean) {
-        if (task.id.isBlank()) return
-
         viewModelScope.launch {
-            when (val result = repository.updateTaskCompletion(task.id, isChecked)) {
-                is TaskResultViewData.Success -> {
-                    _dialogError.value = null
-                    _uiState.update { state ->
-                        if (state is HomeUiState.Success) {
-                            state.copy(tasks = state.tasks.map { if (it.id == task.id) it.copy(isCompleted = isChecked) else it })
-                        } else {
-                            state
-                        }
-                    }
-                }
-
-                is TaskResultViewData.Error -> {
-                    _dialogError.value = result.error
-                }
-            }
+            val result = repository.updateTaskCompletion(task.id, isChecked)
+            if (result is TaskResultViewData.Error) _dialogError.value = result.error
         }
     }
 
     fun onEditTask(task: TaskViewData) {
-        if (task.id.isBlank()) return
-
-        val editedTask = task.copy(priority = task.priority.nextPriority())
-
         viewModelScope.launch {
-            when (val result = repository.updateTask(editedTask)) {
-                is TaskResultViewData.Success -> {
-                    _dialogError.value = null
-                    _uiState.update { state ->
-                        if (state is HomeUiState.Success) {
-                            state.copy(tasks = state.tasks.map { if (it.id == editedTask.id) editedTask else it })
-                        } else {
-                            state
-                        }
-                    }
-                }
-
-                is TaskResultViewData.Error -> _dialogError.value = result.error
-            }
+            _navigationEvent.send(
+                NavigationEvent.Navigate(
+                    RegistrationTaskKey(task)
+                )
+            )
         }
     }
 
-    fun onDeleteTask(task: TaskViewData) {
-        if (task.id.isBlank()) return
+    fun requestDeleteTask(task: TaskViewData) {
+        _taskPendingDelete.value = task
+    }
+
+    fun confirmDeleteTask() {
+        val task = _taskPendingDelete.value ?: return
 
         viewModelScope.launch {
-            when (val result = repository.deleteTask(task.id)) {
-                is TaskResultViewData.Success -> {
-                    _dialogError.value = null
-                    _uiState.update { state ->
-                        if (state is HomeUiState.Success) {
-                            state.copy(tasks = state.tasks.filterNot { it.id == task.id })
-                        } else {
-                            state
-                        }
-                    }
-                }
-
-                is TaskResultViewData.Error -> _dialogError.value = result.error
+            val result = repository.deleteTask(task.id)
+            if (result is TaskResultViewData.Error) {
+                _dialogError.value = result.error
             }
+            _taskPendingDelete.value = null
         }
+    }
+
+    fun dismissDeleteDialog() {
+        _taskPendingDelete.value = null
     }
 
     fun dismissErrorDialog() {
         _dialogError.value = null
     }
 
-    private fun String.nextPriority(): String {
-        return when (this) {
-            PRIORITY_HIGH -> PRIORITY_MEDIUM
-            PRIORITY_MEDIUM -> PRIORITY_LOW
-            else -> PRIORITY_HIGH
+    fun onAddTaskClicked() {
+        viewModelScope.launch {
+            _navigationEvent.send(
+                NavigationEvent.Navigate(route = RegistrationTaskKey(null))
+            )
         }
     }
 }
