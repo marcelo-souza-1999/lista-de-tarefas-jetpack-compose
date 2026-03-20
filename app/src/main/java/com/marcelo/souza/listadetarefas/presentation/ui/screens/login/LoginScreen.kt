@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcelo.souza.listadetarefas.R
 import com.marcelo.souza.listadetarefas.presentation.theme.AppTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
@@ -45,15 +47,43 @@ import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.InputTextField
 import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
 import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryButton
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.viewmodel.LoginViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    onNavigateToRegister: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = koinViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val dimens = LocalDimens.current
     val scrollState = rememberScrollState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            viewModel.consumeSuccess()
+            onLoginSuccess()
+        }
+    }
+
+    uiState.errorResId?.let { errorResId ->
+        TaskErrorFancyDialog(
+            title = stringResource(R.string.title_error_dialog_auth),
+            message = stringResource(errorResId),
+            onRetryClick = {
+                viewModel.clearError()
+                viewModel.login(email, password)
+            },
+            onCancelClick = viewModel::clearError,
+            onDismissRequest = viewModel::clearError
+        )
+    }
 
     Scaffold(
         modifier = Modifier
@@ -84,9 +114,7 @@ fun LoginScreen() {
 
             Text(
                 text = stringResource(id = R.string.login_title),
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    textAlign = TextAlign.Center
-                )
+                style = MaterialTheme.typography.headlineLarge.copy(textAlign = TextAlign.Center)
             )
 
             Spacer(modifier = Modifier.height(dimens.size48))
@@ -113,9 +141,7 @@ fun LoginScreen() {
                 onValueText = { password = it },
                 label = stringResource(id = R.string.label_password),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = if (isPasswordVisible) {
-                    VisualTransformation.None
-                } else PasswordVisualTransformation(),
+                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Lock,
@@ -124,11 +150,7 @@ fun LoginScreen() {
                     )
                 },
                 trailingIcon = {
-                    val icon = if (isPasswordVisible) {
-                        Icons.Default.Visibility
-                    } else {
-                        Icons.Default.VisibilityOff
-                    }
+                    val icon = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                     IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                         Icon(
                             imageVector = icon,
@@ -143,15 +165,16 @@ fun LoginScreen() {
 
             PrimaryButton(
                 text = stringResource(R.string.login_button_primary_text),
-                onClick = { },
-                isLoading = false
+                onClick = { viewModel.login(email, password) },
+                isLoading = uiState.isLoading,
+                enabled = email.isNotBlank() && password.isNotBlank()
             )
 
             Spacer(modifier = Modifier.height(dimens.size16))
 
             SecondaryButton(
                 text = stringResource(R.string.signup_button_secondary_text),
-                onClick = { }
+                onClick = onNavigateToRegister
             )
 
             Spacer(modifier = Modifier.height(dimens.size16))
@@ -159,16 +182,12 @@ fun LoginScreen() {
     }
 }
 
-@Preview(
-    name = "Login Screen",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
+@Preview(name = "Login Screen", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 internal fun LoginScreenDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            LoginScreen()
+            LoginScreen(onNavigateToRegister = {}, onLoginSuccess = {})
         }
     }
 }

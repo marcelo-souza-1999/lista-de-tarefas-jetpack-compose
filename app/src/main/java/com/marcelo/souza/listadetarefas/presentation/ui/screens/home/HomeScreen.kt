@@ -1,88 +1,141 @@
 package com.marcelo.souza.listadetarefas.presentation.ui.screens.home
 
 import android.content.res.Configuration
-import android.widget.Toast
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.marcelo.souza.listadetarefas.R
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
+import com.marcelo.souza.listadetarefas.domain.model.DataError
+import com.marcelo.souza.listadetarefas.domain.model.HomeUiState
+import com.marcelo.souza.listadetarefas.domain.model.TaskFilter
+import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
-import com.marcelo.souza.listadetarefas.presentation.ui.components.LazyColumn
+import com.marcelo.souza.listadetarefas.presentation.ui.components.EmptyTasksState
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskDeleteConfirmationFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskLazyColumn
+import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskLogoutConfirmationFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TopBar
-
-// TODO: Substituir futuramente pelo seu TaskViewData que vem da camada de domínio
-data class Task(
-    val id: Int,
-    val title: String,
-    val description: String,
-    val priority: String
-)
+import com.marcelo.souza.listadetarefas.presentation.viewmodel.HomeViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
-    onNavigateToAddActivity: () -> Unit,
-    // viewModel: HomeViewModel = koinViewModel() // <-- Futuramente
+    onNavigateToCreateTask: () -> Unit,
+    onLoggedOut: () -> Unit,
+    viewModel: HomeViewModel = koinViewModel()
 ) {
-    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
+    val dialogError by viewModel.dialogError.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
 
-    // TODO: Isso virá de um StateFlow do ViewModel (ex: viewModel.uiState.collectAsStateWithLifecycle())
-    val tasks = remember {
-        mutableStateListOf(
-            Task(1, "Organizar Workspace", "Limpar a mesa e organizar os cabos do setup.", "Alta"),
-            Task(2, "Finalizar curso de Compose", "Assistir as últimas aulas.", "Média"),
-            Task(3, "Academia", "Treino de pernas e 30 minutos de cardio.", "Baixa")
+    var taskPendingDelete by remember { mutableStateOf<TaskViewData?>(null) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    val tasks = (uiState as? HomeUiState.Success)?.tasks.orEmpty()
+    val filteredTasks = tasks.filterBy(selectedFilter)
+
+    dialogError?.let { error ->
+        TaskErrorFancyDialog(
+            title = stringResource(R.string.title_error_dialog_registration_task),
+            message = stringResource(error.toMessageRes()),
+            onRetryClick = {
+                viewModel.dismissErrorDialog()
+                viewModel.fetchTasks()
+            },
+            onCancelClick = viewModel::dismissErrorDialog,
+            onDismissRequest = viewModel::dismissErrorDialog
+        )
+    }
+
+    taskPendingDelete?.let { task ->
+        TaskDeleteConfirmationFancyDialog(
+            title = stringResource(R.string.delete_task_dialog_title),
+            message = stringResource(R.string.delete_task_dialog_message, task.title),
+            onConfirmDelete = {
+                viewModel.onDeleteTask(task)
+                taskPendingDelete = null
+            },
+            onCancelClick = { taskPendingDelete = null },
+            onDismissRequest = { taskPendingDelete = null }
+        )
+    }
+
+    if (showLogoutDialog) {
+        TaskLogoutConfirmationFancyDialog(
+            title = stringResource(R.string.logout_dialog_title),
+            message = stringResource(R.string.logout_dialog_message),
+            onConfirmLogout = {
+                showLogoutDialog = false
+                viewModel.logout()
+                onLoggedOut()
+            },
+            onCancelClick = { showLogoutDialog = false },
+            onDismissRequest = { showLogoutDialog = false }
         )
     }
 
     HomeScreenContent(
-        tasks = tasks,
-        userName = "Marcelo Souza", // Futuramente virá do Auth/ViewModel
-        onAddTaskClick = onNavigateToAddActivity,
-        onLogoutClick = {
-            // Lógica de logout do ViewModel
-            Toast.makeText(context, "Saindo...", Toast.LENGTH_SHORT).show()
-        },
-        onDeleteTask = { taskToDelete ->
-            // viewModel.deleteTask(taskToDelete.id)
-            tasks.remove(taskToDelete)
-        },
-        onEditTask = { taskToEdit ->
-            // onNavigateToEditActivity(taskToEdit.id)
-            Toast.makeText(context, "Editando: ${taskToEdit.title}", Toast.LENGTH_SHORT).show()
-        }
+        tasks = filteredTasks,
+        isLoading = uiState is HomeUiState.Loading,
+        selectedFilter = selectedFilter,
+        userName = userName,
+        onFilterChange = viewModel::onFilterChange,
+        onAddTaskClick = onNavigateToCreateTask,
+        onTaskCheckedChange = viewModel::onTaskCheckedChange,
+        onDeleteTask = { taskPendingDelete = it },
+        onEditTask = viewModel::onEditTask,
+        onLogoutClick = { showLogoutDialog = true }
     )
 }
 
 @Composable
 private fun HomeScreenContent(
-    tasks: List<Task>,
+    tasks: List<TaskViewData>,
+    isLoading: Boolean,
+    selectedFilter: TaskFilter,
     userName: String,
+    onFilterChange: (TaskFilter) -> Unit,
     onAddTaskClick: () -> Unit,
+    onTaskCheckedChange: (TaskViewData, Boolean) -> Unit,
+    onDeleteTask: (TaskViewData) -> Unit,
+    onEditTask: (TaskViewData) -> Unit,
     onLogoutClick: () -> Unit,
-    onDeleteTask: (Task) -> Unit,
-    onEditTask: (Task) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimens = LocalDimens.current
@@ -90,9 +143,7 @@ private fun HomeScreenContent(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            AnimatedAddFab(onClick = onAddTaskClick)
-        }
+        floatingActionButton = { AnimatedAddFab(onClick = onAddTaskClick) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -107,21 +158,92 @@ private fun HomeScreenContent(
 
             Spacer(modifier = Modifier.height(dimens.size8))
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                tasks = tasks,
-                onDeleteTask = onDeleteTask,
-                onEditTask = onEditTask
+            TaskFilterRow(
+                selectedFilter = selectedFilter,
+                onFilterChange = onFilterChange,
+                modifier = Modifier.padding(horizontal = dimens.size16)
             )
+
+            Spacer(modifier = Modifier.height(dimens.size8))
+
+            when {
+                isLoading -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) { CircularProgressIndicator() }
+                }
+
+                tasks.isEmpty() -> {
+                    EmptyTasksState(
+                        title = stringResource(R.string.empty_tasks_title),
+                        description = stringResource(R.string.empty_tasks_description)
+                    )
+                }
+
+                else -> {
+                    TaskLazyColumn(
+                        tasks = tasks,
+                        onTaskCheckedChange = onTaskCheckedChange,
+                        onTaskClick = {},
+                        onDeleteTask = onDeleteTask,
+                        onEditTask = onEditTask
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun AnimatedAddFab(
-    onClick: () -> Unit,
+private fun TaskFilterRow(
+    selectedFilter: TaskFilter,
+    onFilterChange: (TaskFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimens = LocalDimens.current
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(dimens.size8)
+    ) {
+        TaskFilter.entries.forEach { filter ->
+            FilterChip(
+                selected = selectedFilter == filter,
+                onClick = { onFilterChange(filter) },
+                label = {
+                    Text(
+                        text = stringResource(
+                            when (filter) {
+                                TaskFilter.ALL -> R.string.filter_all
+                                TaskFilter.PENDING -> R.string.filter_pending
+                                TaskFilter.COMPLETED -> R.string.filter_completed
+                            }
+                        )
+                    )
+                }
+            )
+        }
+    }
+}
+
+private fun List<TaskViewData>.filterBy(filter: TaskFilter): List<TaskViewData> {
+    return when (filter) {
+        TaskFilter.ALL -> this
+        TaskFilter.PENDING -> filter { !it.isCompleted }
+        TaskFilter.COMPLETED -> filter { it.isCompleted }
+    }
+}
+
+private fun DataError.toMessageRes(): Int = when (this) {
+    is DataError.Network -> R.string.message_error_dialog_registration_task_network
+    is DataError.Permission -> R.string.message_error_dialog_registration_task_permission
+    is DataError.Unknown -> R.string.message_error_dialog_registration_task_unknown
+}
+
+@Composable
+private fun AnimatedAddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -142,8 +264,7 @@ private fun AnimatedAddFab(
         onClick = onClick,
         interactionSource = interactionSource,
         containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        shape = MaterialTheme.shapes.large
+        contentColor = MaterialTheme.colorScheme.onPrimary
     ) {
         Icon(
             imageVector = Icons.Default.Add,
@@ -159,28 +280,37 @@ private fun HomeScreenPreview() {
     ListaDeTarefasTheme(darkTheme = false) {
         HomeScreenContent(
             tasks = listOf(
-                Task(1, "Preview Task", "Descrição da preview", "Alta")
+                TaskViewData("1", "user-1", "Organizar Workspace", "Limpar a mesa e organizar os cabos do setup.", PRIORITY_HIGH, false),
+                TaskViewData("2", "user-1", "Academia", "Treino de pernas e 30 minutos de cardio.", PRIORITY_LOW, true)
             ),
-            userName = "Marcelo Souza",
+            isLoading = false,
+            selectedFilter = TaskFilter.ALL,
+            userName = "Marcelo",
+            onFilterChange = {},
             onAddTaskClick = {},
-            onLogoutClick = {},
+            onTaskCheckedChange = { _, _ -> },
             onDeleteTask = {},
-            onEditTask = {}
+            onEditTask = {},
+            onLogoutClick = {}
         )
     }
 }
 
 @Preview(name = "Home Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun HomeScreenPreviewDark() {
+private fun HomeScreenDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         HomeScreenContent(
             tasks = emptyList(),
+            isLoading = false,
+            selectedFilter = TaskFilter.ALL,
             userName = "Marcelo",
+            onFilterChange = {},
             onAddTaskClick = {},
-            onLogoutClick = {},
+            onTaskCheckedChange = { _, _ -> },
             onDeleteTask = {},
-            onEditTask = {}
+            onEditTask = {},
+            onLogoutClick = {}
         )
     }
 }

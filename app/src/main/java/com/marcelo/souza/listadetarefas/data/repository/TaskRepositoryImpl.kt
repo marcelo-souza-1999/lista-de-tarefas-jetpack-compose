@@ -1,6 +1,7 @@
 package com.marcelo.souza.listadetarefas.data.repository
 
 import com.marcelo.souza.listadetarefas.data.datasource.TaskDataSource
+import com.marcelo.souza.listadetarefas.data.mapper.toDomain
 import com.marcelo.souza.listadetarefas.data.mapper.toDto
 import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
 import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
@@ -13,17 +14,26 @@ class TaskRepositoryImpl(
 ) : TaskRepository {
 
     override suspend fun saveTask(task: TaskViewData): TaskResultViewData<Boolean> {
-        // 1. O Repository recebe um objeto de domínio (TaskViewData)
-        // 2. Usamos o mapper para converter para TaskDto (o formato que o Firebase conhece)
-        val taskDto = task.toDto()
-
-        // 3. Chamamos o DataSource para realizar a operação real no banco
-        // O DataSource já nos devolve o resultado tratado com Sucesso ou Erro
-        return taskDataSource.saveTask(taskDto)
+        return taskDataSource.saveTask(task.toDto())
     }
 
     override suspend fun getTasks(): TaskResultViewData<List<TaskViewData>> {
-        // Implementaremos em breve
-        return TaskResultViewData.Success(emptyList())
+        return when (val result = taskDataSource.getTasks()) {
+            is TaskResultViewData.Success -> TaskResultViewData.Success(result.data.map { it.toDomain() })
+            is TaskResultViewData.Error -> TaskResultViewData.Error(result.error)
+        }
+    }
+
+    override suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): TaskResultViewData<Boolean> {
+        return taskDataSource.updateTaskCompletion(taskId, isCompleted)
+    }
+
+    override suspend fun updateTask(task: TaskViewData): TaskResultViewData<Boolean> {
+        if (task.id.isBlank()) return TaskResultViewData.Success(false)
+        return taskDataSource.updateTask(task.id, task.toDto())
+    }
+
+    override suspend fun deleteTask(taskId: String): TaskResultViewData<Boolean> {
+        return taskDataSource.deleteTask(taskId)
     }
 }

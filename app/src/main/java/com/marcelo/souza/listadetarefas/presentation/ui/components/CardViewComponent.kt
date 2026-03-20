@@ -2,6 +2,7 @@ package com.marcelo.souza.listadetarefas.presentation.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,10 +32,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.marcelo.souza.listadetarefas.R
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
+import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.presentation.theme.AppTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.EditBlue
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
@@ -43,66 +50,69 @@ import com.marcelo.souza.listadetarefas.presentation.theme.PriorityLow
 import com.marcelo.souza.listadetarefas.presentation.theme.PriorityMedium
 
 @Composable
-fun CardView(
-    title: String,
-    description: String,
-    priority: String,
+fun TaskCard(
+    task: TaskViewData,
+    onCheckedChange: (Boolean) -> Unit,
+    onTaskClick: (TaskViewData) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimens = LocalDimens.current
 
-    val priorityColor = when (priority) {
-        stringResource(R.string.task_priority_high) -> PriorityHigh
-        stringResource(R.string.task_priority_medium) -> PriorityMedium
+    val priorityColor = when (task.priority) {
+        PRIORITY_HIGH -> PriorityHigh
+        PRIORITY_MEDIUM -> PriorityMedium
         else -> PriorityLow
     }
 
+    val priorityLabel = when (task.priority) {
+        PRIORITY_HIGH -> stringResource(R.string.task_priority_high)
+        PRIORITY_MEDIUM -> stringResource(R.string.task_priority_medium)
+        else -> stringResource(R.string.task_priority_low)
+    }
+
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onTaskClick(task) },
         shape = RoundedCornerShape(dimens.size24),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = dimens.size0)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(dimens.size20)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+        Column(modifier = Modifier.padding(dimens.size20)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = task.isCompleted, onCheckedChange = onCheckedChange)
+                Spacer(modifier = Modifier.width(dimens.size8))
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                )
+            }
 
             Spacer(modifier = Modifier.height(dimens.size8))
 
             Text(
-                text = description,
+                text = task.description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppTheme.colors.textSecondary,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
             )
 
-            Spacer(
-                modifier = Modifier
-                    .height(dimens.size20)
-            )
+            Spacer(modifier = Modifier.height(dimens.size16))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(dimens.size12)
@@ -111,36 +121,27 @@ fun CardView(
                     )
                     Spacer(modifier = Modifier.width(dimens.size8))
                     Text(
-                        text = priority,
+                        text = priorityLabel,
                         style = MaterialTheme.typography.labelMedium,
                         color = AppTheme.colors.textSecondary
                     )
                 }
 
-                Row {
-                    IconButton(
-                        onClick = onEditClick,
-                        modifier = Modifier.size(dimens.size32)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            tint = EditBlue,
-                            modifier = Modifier.size(dimens.size20)
-                        )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (task.isCompleted) stringResource(R.string.task_completed) else stringResource(R.string.task_pending),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (task.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(end = dimens.size8)
+                    )
+                    IconButton(onClick = onEditClick, modifier = Modifier.size(dimens.size32)) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = null, tint = EditBlue)
                     }
-
-                    Spacer(modifier = Modifier.width(dimens.size8))
-
-                    IconButton(
-                        onClick = onDeleteClick,
-                        modifier = Modifier.size(dimens.size32)
-                    ) {
+                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(dimens.size32)) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                            modifier = Modifier.size(dimens.size20)
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
                         )
                     }
                 }
@@ -149,23 +150,15 @@ fun CardView(
     }
 }
 
-@Preview(
-    name = "Dark Mode",
-    showBackground = false,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
+@Preview(name = "Light Mode", showBackground = true)
 @Composable
-internal fun TaskItemCardDarkPreview() {
-    ListaDeTarefasTheme(darkTheme = true) {
-        Surface(
-            color = MaterialTheme.colorScheme.background,
-            modifier = Modifier
-                .padding(24.dp)
-        ) {
-            CardView(
-                title = "Refatorar Cores",
-                description = "Agora as cores estão centralizadas no arquivo Color.kt como solicitado.",
-                priority = "Alta",
+internal fun TaskCardLightPreview() {
+    ListaDeTarefasTheme(darkTheme = false) {
+        Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.padding(24.dp)) {
+            TaskCard(
+                task = TaskViewData("1", "user-1", "Fazer Café", "Comprar grãos novos e passar um café fresquinho.", PRIORITY_LOW, false),
+                onTaskClick = {},
+                onCheckedChange = {},
                 onEditClick = {},
                 onDeleteClick = {}
             )
@@ -173,21 +166,15 @@ internal fun TaskItemCardDarkPreview() {
     }
 }
 
-@Preview(
-    name = "Light Mode",
-    showBackground = true
-)
+@Preview(name = "Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-internal fun TaskItemCardLightPreview() {
-    ListaDeTarefasTheme(darkTheme = false) {
-        Surface(
-            color = MaterialTheme.colorScheme.background,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            CardView(
-                title = "Fazer Café",
-                description = "Comprar grãos novos e passar um café fresquinho.",
-                priority = "Baixa",
+internal fun TaskCardDarkPreview() {
+    ListaDeTarefasTheme(darkTheme = true) {
+        Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.padding(24.dp)) {
+            TaskCard(
+                task = TaskViewData("1", "user-1", "Refatorar Cores", "Agora as cores estão centralizadas no arquivo Color.kt como solicitado.", PRIORITY_HIGH, true),
+                onTaskClick = {},
+                onCheckedChange = {},
                 onEditClick = {},
                 onDeleteClick = {}
             )

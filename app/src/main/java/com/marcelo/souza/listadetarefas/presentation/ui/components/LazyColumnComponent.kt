@@ -30,17 +30,22 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
+import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
+import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
 import com.marcelo.souza.listadetarefas.presentation.theme.EditBlue
 import com.marcelo.souza.listadetarefas.presentation.theme.ErrorRed
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
-import com.marcelo.souza.listadetarefas.presentation.ui.screens.home.Task
 
 @Composable
-fun LazyColumn(
-    tasks: List<Task>,
-    onDeleteTask: (Task) -> Unit,
-    onEditTask: (Task) -> Unit,
+fun TaskLazyColumn(
+    tasks: List<TaskViewData>,
+    onTaskCheckedChange: (TaskViewData, Boolean) -> Unit,
+    onTaskClick: (TaskViewData) -> Unit,
+    onEditTask: (TaskViewData) -> Unit,
+    onDeleteTask: (TaskViewData) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimens = LocalDimens.current
@@ -55,26 +60,17 @@ fun LazyColumn(
         ),
         verticalArrangement = Arrangement.spacedBy(dimens.size16)
     ) {
-        items(
-            items = tasks,
-            key = { it.id }
-        ) { task ->
-            val dismissState = rememberSwipeToDismissBoxState(
-                initialValue = SwipeToDismissBoxValue.Settled
-            )
+        items(items = tasks, key = { it.id.ifBlank { it.title } }) { task ->
+            val dismissState = rememberSwipeToDismissBoxState(initialValue = SwipeToDismissBoxValue.Settled)
 
             LaunchedEffect(dismissState.currentValue) {
                 when (dismissState.currentValue) {
-                    SwipeToDismissBoxValue.StartToEnd -> {
-                        onDeleteTask(task)
-                    }
-
+                    SwipeToDismissBoxValue.StartToEnd -> onDeleteTask(task)
                     SwipeToDismissBoxValue.EndToStart -> {
                         onEditTask(task)
                         dismissState.snapTo(SwipeToDismissBoxValue.Settled)
                     }
-
-                    SwipeToDismissBoxValue.Settled -> {}
+                    SwipeToDismissBoxValue.Settled -> Unit
                 }
             }
 
@@ -85,16 +81,17 @@ fun LazyColumn(
                     val targetValue = dismissState.targetValue
 
                     val color by animateColorAsState(
-                        when (targetValue) {
+                        targetValue = when (targetValue) {
                             SwipeToDismissBoxValue.StartToEnd -> ErrorRed
                             SwipeToDismissBoxValue.EndToStart -> EditBlue
                             else -> Color.Transparent
-                        }, label = "ColorAnimation"
+                        },
+                        label = "DismissColorAnimation"
                     )
 
                     val scale by animateFloatAsState(
-                        if (targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f,
-                        label = "ScaleAnimation"
+                        targetValue = if (targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f,
+                        label = "DismissScaleAnimation"
                     )
 
                     val alignment = when (direction) {
@@ -110,12 +107,9 @@ fun LazyColumn(
                     }
 
                     Box(
-                        Modifier
+                        modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                color,
-                                shape = RoundedCornerShape(dimens.size24)
-                            )
+                            .background(color, shape = RoundedCornerShape(dimens.size24))
                             .padding(horizontal = dimens.size24),
                         contentAlignment = alignment
                     ) {
@@ -128,12 +122,12 @@ fun LazyColumn(
                     }
                 },
                 content = {
-                    CardView(
-                        title = task.title,
-                        description = task.description,
-                        priority = task.priority,
-                        onDeleteClick = { onDeleteTask(task) },
-                        onEditClick = { onEditTask(task) }
+                    TaskCard(
+                        task = task,
+                        onTaskClick = onTaskClick,
+                        onCheckedChange = { isChecked -> onTaskCheckedChange(task, isChecked) },
+                        onEditClick = { onEditTask(task) },
+                        onDeleteClick = { onDeleteTask(task) }
                     )
                 }
             )
@@ -141,61 +135,44 @@ fun LazyColumn(
     }
 }
 
-@Preview(
-    name = "List Light Mode",
-    showBackground = true
-)
+@Preview(name = "List Light Mode", showBackground = true)
 @Composable
 internal fun TaskListLightPreview() {
     val fakePreviewTasks = listOf(
-        Task(
-            1,
-            "Tarefa Urgente",
-            "Esta é uma tarefa de alta prioridade para testar o vermelho.",
-            "Alta"
-        ),
-        Task(2, "Tarefa Comum", "Uma tarefa normal do dia a dia, cor amarela.", "Média"),
-        Task(3, "Relaxar", "Tarefa tranquila, cor verde.", "Baixa"),
-        Task(4, "Outra Tarefa", "Mais um item para encher a lista e testar o scroll.", "Baixa")
+        TaskViewData("1", "user-1", "Tarefa Urgente", "Esta é uma tarefa de alta prioridade para testar o vermelho.", PRIORITY_HIGH, false),
+        TaskViewData("2", "user-1", "Tarefa Comum", "Uma tarefa normal do dia a dia, cor amarela.", PRIORITY_MEDIUM, false),
+        TaskViewData("3", "user-1", "Relaxar", "Tarefa tranquila, cor verde.", PRIORITY_LOW, true)
     )
     ListaDeTarefasTheme(darkTheme = false) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            LazyColumn(
+            TaskLazyColumn(
                 tasks = fakePreviewTasks,
-                onDeleteTask = { _: Task -> /* Lógica de delete */ },
-                onEditTask = { _: Task -> /* Lógica de edit */ },
+                onTaskCheckedChange = { _, _ -> },
+                onTaskClick = {},
+                onDeleteTask = {},
+                onEditTask = {},
                 modifier = Modifier.padding(16.dp)
             )
         }
     }
 }
 
-@Preview(
-    name = "List Dark Mode",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
+@Preview(name = "List Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 internal fun TaskListDarkPreview() {
     val fakePreviewTasks = listOf(
-        Task(
-            1,
-            "Tarefa Urgente",
-            "Esta é uma tarefa de alta prioridade para testar o vermelho.",
-            "Alta"
-        ),
-        Task(2, "Tarefa Comum", "Uma tarefa normal do dia a dia, cor amarela.", "Média"),
-        Task(3, "Relaxar", "Tarefa tranquila, cor verde.", "Baixa"),
-        Task(4, "Outra Tarefa", "Mais um item para encher a lista e testar o scroll.", "Baixa"),
-        Task(5, "Outra Tarefa", "Mais um item para encher a lista e testar o scroll.", "Baixa"),
-        Task(6, "Outra Tarefa", "Mais um item para encher a lista e testar o scroll.", "Baixa")
+        TaskViewData("1", "user-1", "Tarefa Urgente", "Esta é uma tarefa de alta prioridade para testar o vermelho.", PRIORITY_HIGH, false),
+        TaskViewData("2", "user-1", "Tarefa Comum", "Uma tarefa normal do dia a dia, cor amarela.", PRIORITY_MEDIUM, false),
+        TaskViewData("3", "user-1", "Relaxar", "Tarefa tranquila, cor verde.", PRIORITY_LOW, true)
     )
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            LazyColumn(
+            TaskLazyColumn(
                 tasks = fakePreviewTasks,
-                onDeleteTask = { _: Task -> /* Lógica de delete */ },
-                onEditTask = { _: Task -> /* Lógica de edit */ },
+                onTaskCheckedChange = { _, _ -> },
+                onTaskClick = {},
+                onDeleteTask = {},
+                onEditTask = {},
                 modifier = Modifier.padding(16.dp)
             )
         }
