@@ -2,9 +2,12 @@ package com.marcelo.souza.listadetarefas.data.utils
 
 object Constants {
     const val COLLECTION_NAME = "tasks"
+    const val USERS_COLLECTION = "users"
 
     const val EMPTY_ID = ""
     const val FIELD_IS_COMPLETED = "completed"
+    const val FIELD_USER_ID = "userId"
+    const val FIELD_NAME = "name"
 
     const val PRIORITY_HIGH = "HIGH"
     const val PRIORITY_MEDIUM = "MEDIUM"

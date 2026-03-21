@@ -36,10 +36,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.marcelo.souza.listadetarefas.R
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
-import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
+import com.marcelo.souza.listadetarefas.domain.model.Task
+import com.marcelo.souza.listadetarefas.domain.model.TaskPriority
 import com.marcelo.souza.listadetarefas.presentation.theme.AppTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.EditBlue
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
@@ -50,7 +48,7 @@ import com.marcelo.souza.listadetarefas.presentation.theme.PriorityMedium
 
 @Composable
 fun TaskCard(
-    task: TaskViewData,
+    task: Task,
     onCheckedChange: (Boolean) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -59,14 +57,14 @@ fun TaskCard(
     val dimens = LocalDimens.current
 
     val priorityColor = when (task.priority) {
-        PRIORITY_HIGH -> PriorityHigh
-        PRIORITY_MEDIUM -> PriorityMedium
+        TaskPriority.HIGH -> PriorityHigh
+        TaskPriority.MEDIUM -> PriorityMedium
         else -> PriorityLow
     }
 
     val priorityLabel = when (task.priority) {
-        PRIORITY_HIGH -> stringResource(R.string.task_priority_high)
-        PRIORITY_MEDIUM -> stringResource(R.string.task_priority_medium)
+        TaskPriority.HIGH -> stringResource(R.string.task_priority_high)
+        TaskPriority.MEDIUM -> stringResource(R.string.task_priority_medium)
         else -> stringResource(R.string.task_priority_low)
     }
 
@@ -159,11 +157,11 @@ internal fun TaskCardLightPreview() {
     ListaDeTarefasTheme(darkTheme = false) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.padding(24.dp)) {
             TaskCard(
-                task = TaskViewData(
+                task = Task(
                     "1",
                     "Fazer Café",
                     "Comprar grãos novos e passar um café fresquinho.",
-                    PRIORITY_LOW,
+                    TaskPriority.LOW,
                     false
                 ),
                 onCheckedChange = {},
@@ -180,11 +178,11 @@ internal fun TaskCardDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.padding(24.dp)) {
             TaskCard(
-                task = TaskViewData(
+                task = Task(
                     "1",
                     "Refatorar Cores",
                     "Agora as cores estão centralizadas no arquivo Color.kt como solicitado.",
-                    PRIORITY_HIGH,
+                    TaskPriority.HIGH,
                     true
                 ),
                 onCheckedChange = {},

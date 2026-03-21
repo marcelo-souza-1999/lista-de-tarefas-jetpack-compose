@@ -1,4 +1,4 @@
-package com.marcelo.souza.listadetarefas.presentation.ui.screens.home
+package com.marcelo.souza.listadetarefas.presentation.ui.home
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.Spring
@@ -36,22 +36,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcelo.souza.listadetarefas.R
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
-import com.marcelo.souza.listadetarefas.domain.model.HomeUiState
-import com.marcelo.souza.listadetarefas.domain.model.TaskFilter
-import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
+import com.marcelo.souza.listadetarefas.domain.model.Task
+import com.marcelo.souza.listadetarefas.domain.model.TaskPriority
 import com.marcelo.souza.listadetarefas.presentation.navigation.AppNavigator
 import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.EmptyTasksState
-import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskDeleteConfirmationFancyDialog
-import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskLazyColumn
 import com.marcelo.souza.listadetarefas.presentation.ui.components.TopBar
+import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskDeleteConfirmationFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskErrorFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskLogoutConfirmationFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.utils.toMessageRes
 import com.marcelo.souza.listadetarefas.presentation.viewmodel.HomeViewModel
+import com.marcelo.souza.listadetarefas.presentation.viewmodel.HomeViewModel.HomeDialogType
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -62,17 +61,29 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedFilter by viewModel.selectedFilter.collectAsStateWithLifecycle()
     val dialogError by viewModel.dialogError.collectAsStateWithLifecycle()
+    val showLogoutDialog by viewModel.showLogoutDialog.collectAsStateWithLifecycle()
     val taskPendingDelete by viewModel.taskPendingDelete.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
 
     val tasks = (uiState as? HomeUiState.Success)?.tasks.orEmpty()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is NavigationEvent.Navigate -> navigator.navigate(event.route)
+                is NavigationEvent.NavigateAndClear -> navigator.navigateAndClear(event.route)
+                NavigationEvent.NavigateBack -> navigator.navigateBack()
+            }
+        }
+    }
 
     dialogError?.let { error ->
         TaskErrorFancyDialog(
             title = stringResource(R.string.title_error_dialog_registration_task),
             message = stringResource(error.toMessageRes()),
-            onRetryClick = viewModel::dismissErrorDialog,
-            onCancelClick = viewModel::dismissErrorDialog,
-            onDismissRequest = viewModel::dismissErrorDialog
+            onRetryClick = { viewModel.dismissDialog(HomeDialogType.ERROR) },
+            onCancelClick = { viewModel.dismissDialog(HomeDialogType.ERROR) },
+            onDismissRequest = { viewModel.dismissDialog(HomeDialogType.ERROR) }
         )
     }
 
@@ -81,42 +92,47 @@ fun HomeScreen(
             title = stringResource(R.string.delete_task_dialog_title),
             message = stringResource(R.string.delete_task_dialog_message, task.title),
             onConfirmDelete = viewModel::confirmDeleteTask,
-            onCancelClick = viewModel::dismissDeleteDialog,
-            onDismissRequest = viewModel::dismissDeleteDialog
+            onCancelClick = { viewModel.dismissDialog(HomeDialogType.DELETE) },
+            onDismissRequest = { viewModel.dismissDialog(HomeDialogType.DELETE) }
         )
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.navigationEvent.collect { event ->
-            when (event) {
-                is NavigationEvent.Navigate -> navigator.navigate(event.route)
-                NavigationEvent.NavigateBack -> navigator.navigateBack()
-            }
-        }
+    if (showLogoutDialog) {
+        TaskLogoutConfirmationFancyDialog(
+            title = stringResource(R.string.logout_dialog_title),
+            message = stringResource(R.string.logout_dialog_message),
+            onConfirmLogout = viewModel::logout,
+            onCancelClick = { viewModel.dismissDialog(HomeDialogType.LOGOUT) },
+            onDismissRequest = { viewModel.dismissDialog(HomeDialogType.LOGOUT) }
+        )
     }
 
     HomeScreenContent(
         tasks = tasks,
         isLoading = uiState is HomeUiState.Loading,
         selectedFilter = selectedFilter,
+        userName = userName,
         onFilterChange = viewModel::onFilterChange,
         onAddTaskClick = viewModel::onAddTaskClicked,
         onTaskCheckedChange = viewModel::onTaskCheckedChange,
         onDeleteTask = viewModel::requestDeleteTask,
-        onEditTask = viewModel::onEditTask
+        onEditTask = viewModel::onEditTask,
+        onLogoutClick = viewModel::onLogoutClick
     )
 }
 
 @Composable
 private fun HomeScreenContent(
-    tasks: List<TaskViewData>,
+    tasks: List<Task>,
     isLoading: Boolean,
     selectedFilter: TaskFilter,
+    userName: String,
     onFilterChange: (TaskFilter) -> Unit,
     onAddTaskClick: () -> Unit,
-    onTaskCheckedChange: (TaskViewData, Boolean) -> Unit,
-    onDeleteTask: (TaskViewData) -> Unit,
-    onEditTask: (TaskViewData) -> Unit,
+    onTaskCheckedChange: (Task, Boolean) -> Unit,
+    onDeleteTask: (Task) -> Unit,
+    onEditTask: (Task) -> Unit,
+    onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimens = LocalDimens.current
@@ -132,8 +148,8 @@ private fun HomeScreenContent(
                 .padding(paddingValues)
         ) {
             TopBar(
-                userName = "Marcelo Souza",
-                onLogoutClick = { /* Implementar logout futuramente */ }
+                userName = userName,
+                onLogoutClick = onLogoutClick
             )
 
             Spacer(modifier = Modifier.height(dimens.size8))
@@ -236,12 +252,14 @@ private fun HomeScreenPreview() {
             HomeScreenContent(
                 tasks = getFakeTasks(),
                 isLoading = false,
+                userName = "Marcelo",
                 selectedFilter = TaskFilter.COMPLETED,
                 onFilterChange = {},
                 onAddTaskClick = {},
                 onTaskCheckedChange = { _, _ -> },
                 onDeleteTask = {},
-                onEditTask = {}
+                onEditTask = {},
+                onLogoutClick = {}
             )
         }
     }
@@ -255,18 +273,20 @@ private fun HomeScreenDarkPreview() {
             HomeScreenContent(
                 tasks = emptyList(),
                 isLoading = false,
+                userName = "Marcelo",
                 selectedFilter = TaskFilter.ALL,
                 onFilterChange = {},
                 onAddTaskClick = {},
                 onTaskCheckedChange = { _, _ -> },
                 onDeleteTask = {},
-                onEditTask = {}
+                onEditTask = {},
+                onLogoutClick = {}
             )
         }
     }
 }
 
 private fun getFakeTasks() = listOf(
-    TaskViewData("1", "Task Reativa 1", "Lógica no ViewModel", PRIORITY_HIGH, false),
-    TaskViewData("2", "Task Reativa 2", "UI focada em desenho", PRIORITY_LOW, true)
+    Task("1", "Task Reativa 1", "Lógica no ViewModel", TaskPriority.HIGH, false),
+    Task("2", "Task Reativa 2", "UI focada em desenho", TaskPriority.LOW, true)
 )

@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ListaDeTarefas">
         <activity
-            android:name=".presentation.ui.activitys.MainActivity"
+            android:name=".presentation.MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.ListaDeTarefas">

@@ -1,59 +1,55 @@
-package com.marcelo.souza.listadetarefas.presentation.ui.components
+package com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs
 
-import android.content.res.Configuration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.marcelo.souza.listadetarefas.R
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
-import com.patrik.fancycomposedialogs.dialogs.WarningFancyDialog
+import com.patrik.fancycomposedialogs.dialogs.ErrorFancyDialog
 import com.patrik.fancycomposedialogs.enums.DialogActionType
 import com.patrik.fancycomposedialogs.enums.DialogStyle
 import com.patrik.fancycomposedialogs.properties.DialogButtonProperties
 
 @Composable
-fun TaskDeleteConfirmationFancyDialog(
+fun TaskErrorFancyDialog(
     title: String,
     message: String,
-    onConfirmDelete: () -> Unit,
+    isCancelable: Boolean = true,
+    onRetryClick: () -> Unit,
     onCancelClick: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    WarningFancyDialog(
+    ErrorFancyDialog(
         title = title,
         showTitle = true,
         showMessage = true,
         message = message,
-        isCancelable = true,
+        isCancelable = isCancelable,
         dialogActionType = DialogActionType.ACTIONABLE,
         dialogProperties = DialogButtonProperties(
-            positiveButtonText = R.string.title_button_delete_confirm,
-            negativeButtonText = R.string.title_button_cancel_delete_confirm,
+            positiveButtonText = R.string.title_button_positive_error_dialog_registration_task,
+            negativeButtonText = R.string.title_button_negative_error_dialog_registration_task,
             buttonColor = MaterialTheme.colorScheme.error,
             buttonTextColor = Color.White
         ),
         dialogStyle = DialogStyle.UPPER_CUTTING,
-        positiveButtonClick = onConfirmDelete,
+        positiveButtonClick = onRetryClick,
         negativeButtonClick = onCancelClick,
         dismissTouchOutside = onDismissRequest
     )
 }
 
-@Preview(
-    name = "Delete Dialog",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
+@Preview(showBackground = true)
 @Composable
-private fun TaskDeleteConfirmationFancyDialogPreview() {
-    ListaDeTarefasTheme(darkTheme = true) {
-        TaskDeleteConfirmationFancyDialog(
-            title = "Excluir Tarefa",
-            message = "Tem certeza que deseja excluir esta tarefa? Esta ação não poderá ser desfeita.",
-            onConfirmDelete = { },
-            onCancelClick = { },
-            onDismissRequest = { }
+internal fun TaskErrorFancyDialogPreview() {
+    ListaDeTarefasTheme(darkTheme = false) {
+        TaskErrorFancyDialog(
+            title = "Ops, algo deu errado!",
+            message = "Não foi possível salvar sua tarefa. Tente novamente.",
+            onRetryClick = {},
+            onCancelClick = {},
+            onDismissRequest = {}
         )
     }
 }

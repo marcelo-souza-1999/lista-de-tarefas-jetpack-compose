@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.google.gms.services)
     alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.hotswan.compiler)
+    alias(libs.plugins.kotzilla)
 }
 
 apply(plugin = "shot")
@@ -13,9 +15,7 @@ apply(from = "../config/detekt/detekt.gradle")
 
 android {
     namespace = "com.marcelo.souza.listadetarefas"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.marcelo.souza.listadetarefas"
@@ -43,6 +43,12 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    afterEvaluate {
+        tasks.matching { it.name.startsWith("ksp") }.configureEach {
+            dependsOn(tasks.matching { it.name.startsWith("generateKotzillaConfig") })
+        }
     }
 
     ksp {
@@ -118,11 +124,12 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
     include("**/*.kt")
     include("**/*.kts")
     exclude("**/build/**")
+    autoCorrect = true
     reports {
         xml.required.set(false)
-        html.required.set(true)
+        html.required.set(false)
         txt.required.set(true)
-        sarif.required.set(true)
-        sarif.outputLocation.set(file("build/reports/detekt/detekt.sarif"))
+        txt.outputLocation.set(file("$projectDir/detekt-report.txt"))
+        sarif.required.set(false)
     }
 }

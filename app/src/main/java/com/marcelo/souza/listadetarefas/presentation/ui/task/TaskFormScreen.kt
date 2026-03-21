@@ -1,4 +1,4 @@
-package com.marcelo.souza.listadetarefas.presentation.ui.screens.tasks
+package com.marcelo.souza.listadetarefas.presentation.ui.task
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -31,27 +31,28 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcelo.souza.listadetarefas.R
-import com.marcelo.souza.listadetarefas.domain.model.TaskPriorityEnum
-import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
-import com.marcelo.souza.listadetarefas.domain.model.UiEvent
+import com.marcelo.souza.listadetarefas.domain.model.Task
+import com.marcelo.souza.listadetarefas.domain.model.TaskPriority
 import com.marcelo.souza.listadetarefas.presentation.navigation.AppNavigator
 import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
 import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryTopBar
-import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskErrorFancyDialog
-import com.marcelo.souza.listadetarefas.presentation.ui.components.TaskSuccessFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskErrorFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskSuccessFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.ui.home.UiEvent
 import com.marcelo.souza.listadetarefas.presentation.utils.toColor
+import com.marcelo.souza.listadetarefas.presentation.utils.toLabelResId
 import com.marcelo.souza.listadetarefas.presentation.utils.toMessageRes
-import com.marcelo.souza.listadetarefas.presentation.viewmodel.RegistrationTaskViewModel
+import com.marcelo.souza.listadetarefas.presentation.viewmodel.TaskFormViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun RegistrationTaskScreen(
+fun TaskFormScreen(
     navigator: AppNavigator,
-    task: TaskViewData? = null,
-    viewModel: RegistrationTaskViewModel = koinViewModel()
+    task: Task? = null,
+    viewModel: TaskFormViewModel = koinViewModel()
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,6 +78,7 @@ fun RegistrationTaskScreen(
             when (event) {
                 is NavigationEvent.Navigate -> navigator.navigate(event.route)
                 NavigationEvent.NavigateBack -> navigator.navigateBack()
+                else -> Unit
             }
         }
     }
@@ -124,13 +126,19 @@ fun RegistrationTaskScreen(
     else
         stringResource(R.string.title_topbar_registration_tasks)
 
-    RegistrationTaskContent(
+    val titleButton = if (uiState.isEditing)
+        stringResource(R.string.edit_tasks_button_text)
+    else
+        stringResource(R.string.register_tasks_button_text)
+
+    TaskFormContent(
         title = uiState.title,
         titleTopBar = titleTopBar,
+        titleButton = titleButton,
         onTitleChange = viewModel::onTitleChange,
         description = uiState.description,
         onDescriptionChange = viewModel::onDescriptionChange,
-        selectedTaskPriorityEnum = uiState.selectedPriority,
+        selectedTaskPriority = uiState.selectedPriority,
         onPrioritySelect = viewModel::onPriorityChange,
         onSaveClick = viewModel::saveTask,
         onBackClick = viewModel::onBackClicked,
@@ -140,21 +148,22 @@ fun RegistrationTaskScreen(
 }
 
 @Composable
-private fun RegistrationTaskContent(
+private fun TaskFormContent(
     title: String,
     titleTopBar: String,
+    titleButton: String,
     onTitleChange: (String) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
-    selectedTaskPriorityEnum: TaskPriorityEnum,
-    onPrioritySelect: (TaskPriorityEnum) -> Unit,
+    selectedTaskPriority: TaskPriority,
+    onPrioritySelect: (TaskPriority) -> Unit,
     onSaveClick: () -> Unit,
     onBackClick: () -> Unit,
     isLoading: Boolean,
     isSaveButtonEnabled: Boolean
 ) {
     val dimens = LocalDimens.current
-    val priorities = TaskPriorityEnum.entries
+    val priorities = TaskPriority.entries
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -176,7 +185,7 @@ private fun RegistrationTaskContent(
                 modifier = Modifier.navigationBarsPadding()
             ) {
                 PrimaryButton(
-                    text = stringResource(R.string.register_tasks_button_text),
+                    text = titleButton,
                     onClick = onSaveClick,
                     isLoading = isLoading,
                     enabled = isSaveButtonEnabled,
@@ -235,7 +244,7 @@ private fun RegistrationTaskContent(
                 horizontalArrangement = Arrangement.spacedBy(dimens.size12)
             ) {
                 priorities.forEach { priority ->
-                    val isSelected = selectedTaskPriorityEnum == priority
+                    val isSelected = selectedTaskPriority == priority
                     val color = priority.toColor()
 
                     FilterChip(
@@ -243,7 +252,7 @@ private fun RegistrationTaskContent(
                         onClick = { onPrioritySelect(priority) },
                         label = {
                             Text(
-                                text = stringResource(priority.labelResId),
+                                text = stringResource(priority.toLabelResId()),
                                 color = if (isSelected)
                                     MaterialTheme.colorScheme.onPrimary
                                 else color
@@ -263,13 +272,14 @@ private fun RegistrationTaskContent(
 @Composable
 private fun PreviewLight() {
     ListaDeTarefasTheme {
-        RegistrationTaskContent(
+        TaskFormContent(
             title = "Nova Task",
             titleTopBar = stringResource(R.string.title_topbar_registration_edit_tasks),
+            titleButton = stringResource(R.string.edit_tasks_button_text),
             onTitleChange = {},
             description = "Descrição",
             onDescriptionChange = {},
-            selectedTaskPriorityEnum = TaskPriorityEnum.HIGH,
+            selectedTaskPriority = TaskPriority.HIGH,
             onPrioritySelect = {},
             onSaveClick = {},
             onBackClick = {},
@@ -283,13 +293,14 @@ private fun PreviewLight() {
 @Composable
 private fun PreviewDark() {
     ListaDeTarefasTheme(darkTheme = true) {
-        RegistrationTaskContent(
+        TaskFormContent(
             title = "",
             titleTopBar = stringResource(R.string.title_topbar_registration_tasks),
+            titleButton = stringResource(R.string.register_tasks_button_text),
             onTitleChange = {},
             description = "",
             onDescriptionChange = {},
-            selectedTaskPriorityEnum = TaskPriorityEnum.LOW,
+            selectedTaskPriority = TaskPriority.LOW,
             onPrioritySelect = {},
             onSaveClick = {},
             onBackClick = {},

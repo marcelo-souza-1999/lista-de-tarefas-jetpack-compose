@@ -18,4 +18,9 @@ class AppNavigator(
             backStack.removeLastOrNull()
         }
     }
+
+    fun navigateAndClear(route: RoutesKey) {
+        backStack.clear()
+        backStack.add(route)
+    }
 }

@@ -7,6 +7,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import org.koin.ksp.generated.module
+import io.kotzilla.generated.monitoring
 
 class InitializeKoinApplication : Application() {
 
@@ -16,6 +17,7 @@ class InitializeKoinApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(applicationContext)
+            monitoring()
             modules(
                 AppModule().module,
                 DataSourceModule().module

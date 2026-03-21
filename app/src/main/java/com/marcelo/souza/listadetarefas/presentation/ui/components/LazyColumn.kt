@@ -29,10 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_HIGH
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_LOW
-import com.marcelo.souza.listadetarefas.data.utils.Constants.PRIORITY_MEDIUM
-import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
+import com.marcelo.souza.listadetarefas.domain.model.Task
+import com.marcelo.souza.listadetarefas.domain.model.TaskPriority
 import com.marcelo.souza.listadetarefas.presentation.theme.EditBlue
 import com.marcelo.souza.listadetarefas.presentation.theme.ErrorRed
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
@@ -40,10 +38,10 @@ import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 
 @Composable
 fun TaskLazyColumn(
-    tasks: List<TaskViewData>,
-    onTaskCheckedChange: (TaskViewData, Boolean) -> Unit,
-    onEditTask: (TaskViewData) -> Unit,
-    onDeleteTask: (TaskViewData) -> Unit,
+    tasks: List<Task>,
+    onTaskCheckedChange: (Task, Boolean) -> Unit,
+    onEditTask: (Task) -> Unit,
+    onDeleteTask: (Task) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dimens = LocalDimens.current
@@ -163,7 +161,7 @@ internal fun TaskListDarkPreview() {
 }
 
 private fun getFakeTasks() = listOf(
-    TaskViewData("1", "Tarefa Urgente", "Prioridade alta.", PRIORITY_HIGH, false),
-    TaskViewData("2", "Tarefa Média", "Prioridade média.", PRIORITY_MEDIUM, false),
-    TaskViewData("3", "Relaxar", "Prioridade baixa.", PRIORITY_LOW, true)
+    Task("1", "Tarefa Urgente", "Prioridade alta.", TaskPriority.HIGH, false),
+    Task("2", "Tarefa Média", "Prioridade média.", TaskPriority.MEDIUM, false),
+    Task("3", "Relaxar", "Prioridade baixa.", TaskPriority.LOW, true)
 )

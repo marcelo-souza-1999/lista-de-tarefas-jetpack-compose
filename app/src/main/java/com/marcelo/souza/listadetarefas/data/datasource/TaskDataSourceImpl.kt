@@ -8,8 +8,10 @@ import com.marcelo.souza.listadetarefas.data.model.TaskDto
 import com.marcelo.souza.listadetarefas.data.utils.Constants.COLLECTION_NAME
 import com.marcelo.souza.listadetarefas.data.utils.Constants.EMPTY_ID
 import com.marcelo.souza.listadetarefas.data.utils.Constants.FIELD_IS_COMPLETED
+import com.marcelo.souza.listadetarefas.data.utils.Constants.FIELD_USER_ID
 import com.marcelo.souza.listadetarefas.domain.model.DataError
-import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
+import com.marcelo.souza.listadetarefas.domain.model.TaskResult
+import com.marcelo.souza.listadetarefas.domain.repository.AuthenticateRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -18,89 +20,115 @@ import org.koin.core.annotation.Single
 
 @Single
 class TaskDataSourceImpl(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val authRepository: AuthenticateRepository
 ) : TaskDataSource {
 
-    override suspend fun saveTask(task: TaskDto): TaskResultViewData<Boolean> {
+    override suspend fun saveTask(task: TaskDto): TaskResult<Boolean> {
+        val userId = authRepository.getCurrentUserId()
+            ?: return TaskResult.Error(DataError.Permission())
+
         return try {
-            firestore.collection(COLLECTION_NAME).add(task.copy(id = EMPTY_ID)).await()
-            TaskResultViewData.Success(true)
+            firestore.collection(COLLECTION_NAME)
+                .add(task.copy(id = EMPTY_ID, userId = userId))
+                .await()
+
+            TaskResult.Success(true)
         } catch (e: Exception) {
-            TaskResultViewData.Error(mapFirebaseError(e))
+            TaskResult.Error(mapFirebaseError(e))
         }
     }
 
-    override fun getTasks(): Flow<TaskResultViewData<List<TaskDto>>> = callbackFlow {
-        val listenerRegistration = firestore.collection(COLLECTION_NAME)
+    override fun getTasks(): Flow<TaskResult<List<TaskDto>>> = callbackFlow {
+        val userId = authRepository.getCurrentUserId()
+
+        if (userId == null) {
+            trySend(TaskResult.Error(DataError.Permission()))
+            close()
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection(COLLECTION_NAME)
+            .whereEqualTo(FIELD_USER_ID, userId)
             .addSnapshotListener { snapshot, error ->
-                if (snapshot != null) {
-                    val tasks = snapshot.documents.mapNotNull { document ->
-                        document.toObject(TaskDto::class.java)?.copy(id = document.id)
-                    }
-                    trySend(TaskResultViewData.Success(tasks))
-                }
 
                 if (error != null) {
-                    trySend(TaskResultViewData.Error(mapFirebaseError(error)))
+                    trySend(TaskResult.Error(mapFirebaseError(error)))
                     return@addSnapshotListener
                 }
+
+                val tasks = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(TaskDto::class.java)?.copy(id = doc.id)
+                }.orEmpty()
+
+                trySend(TaskResult.Success(tasks))
             }
 
-        awaitClose { listenerRegistration.remove() }
+        awaitClose { listener.remove() }
     }
 
     override suspend fun updateTaskCompletion(
         taskId: String,
         isCompleted: Boolean
-    ): TaskResultViewData<Boolean> {
+    ): TaskResult<Boolean> {
+
         return try {
             firestore.collection(COLLECTION_NAME)
                 .document(taskId)
                 .update(FIELD_IS_COMPLETED, isCompleted)
                 .await()
-            TaskResultViewData.Success(true)
+
+            TaskResult.Success(true)
         } catch (e: Exception) {
-            TaskResultViewData.Error(mapFirebaseError(e))
+            TaskResult.Error(mapFirebaseError(e))
         }
     }
 
-    override suspend fun updateTask(taskId: String, task: TaskDto): TaskResultViewData<Boolean> {
+    override suspend fun updateTask(
+        taskId: String,
+        task: TaskDto
+    ): TaskResult<Boolean> {
+
+        val userId = authRepository.getCurrentUserId()
+            ?: return TaskResult.Error(DataError.Permission())
+
         return try {
             firestore.collection(COLLECTION_NAME)
                 .document(taskId)
-                .set(task.copy(id = taskId))
+                .set(task.copy(id = taskId, userId = userId))
                 .await()
-            TaskResultViewData.Success(true)
+
+            TaskResult.Success(true)
         } catch (e: Exception) {
-            TaskResultViewData.Error(mapFirebaseError(e))
+            TaskResult.Error(mapFirebaseError(e))
         }
     }
 
-    override suspend fun deleteTask(taskId: String): TaskResultViewData<Boolean> {
+    override suspend fun deleteTask(taskId: String): TaskResult<Boolean> {
         return try {
             firestore.collection(COLLECTION_NAME)
                 .document(taskId)
                 .delete()
                 .await()
-            TaskResultViewData.Success(true)
+
+            TaskResult.Success(true)
         } catch (e: Exception) {
-            TaskResultViewData.Error(mapFirebaseError(e))
+            TaskResult.Error(mapFirebaseError(e))
         }
     }
 
     private fun mapFirebaseError(e: Exception): DataError {
         return when (e) {
             is FirebaseNetworkException -> DataError.Network()
-            is FirebaseFirestoreException -> {
-                when (e.code) {
-                    FirebaseFirestoreException.Code.UNAUTHENTICATED,
-                    FirebaseFirestoreException.Code.PERMISSION_DENIED -> DataError.Permission()
 
-                    FirebaseFirestoreException.Code.UNAVAILABLE,
-                    FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> DataError.Network()
+            is FirebaseFirestoreException -> when (e.code) {
+                FirebaseFirestoreException.Code.UNAUTHENTICATED,
+                FirebaseFirestoreException.Code.PERMISSION_DENIED -> DataError.Permission()
 
-                    else -> DataError.Unknown()
-                }
+                FirebaseFirestoreException.Code.UNAVAILABLE,
+                FirebaseFirestoreException.Code.DEADLINE_EXCEEDED -> DataError.Network()
+
+                else -> DataError.Unknown()
             }
 
             is FirebaseException -> DataError.Unknown()

@@ -1,13 +1,20 @@
 package com.marcelo.souza.listadetarefas.domain.repository
 
-import com.marcelo.souza.listadetarefas.domain.model.TaskResultViewData
-import com.marcelo.souza.listadetarefas.domain.model.TaskViewData
+import com.marcelo.souza.listadetarefas.domain.model.TaskResult
+import com.marcelo.souza.listadetarefas.domain.model.Task
 import kotlinx.coroutines.flow.Flow
 
 interface TaskRepository {
-    suspend fun saveTask(task: TaskViewData): TaskResultViewData<Boolean>
-    fun getTasks(): Flow<TaskResultViewData<List<TaskViewData>>>
-    suspend fun updateTaskCompletion(taskId: String, isCompleted: Boolean): TaskResultViewData<Boolean>
-    suspend fun updateTask(task: TaskViewData): TaskResultViewData<Boolean>
-    suspend fun deleteTask(taskId: String): TaskResultViewData<Boolean>
+    suspend fun saveTask(task: Task): TaskResult<Boolean>
+
+    fun getTasks(): Flow<TaskResult<List<Task>>>
+
+    suspend fun updateTaskCompletion(
+        taskId: String,
+        isCompleted: Boolean
+    ): TaskResult<Boolean>
+
+    suspend fun updateTask(task: Task): TaskResult<Boolean>
+
+    suspend fun deleteTask(taskId: String): TaskResult<Boolean>
 }

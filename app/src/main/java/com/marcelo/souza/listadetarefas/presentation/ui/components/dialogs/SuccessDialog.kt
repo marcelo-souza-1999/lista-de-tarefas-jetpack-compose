@@ -1,4 +1,4 @@
-package com.marcelo.souza.listadetarefas.presentation.ui.components
+package com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
