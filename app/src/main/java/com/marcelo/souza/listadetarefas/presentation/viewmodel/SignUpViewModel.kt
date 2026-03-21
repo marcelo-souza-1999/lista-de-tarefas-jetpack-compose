@@ -78,7 +78,7 @@ class SignUpViewModel(
 
     fun signUp() {
         val state = _uiState.value
-        if (state.isLoading) return
+        if (state.isLoading || !state.isFormValid) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorResId = null) }

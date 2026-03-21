@@ -60,8 +60,6 @@ fun SignUpScreen(
     viewModel: SignUpViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val dimens = LocalDimens.current
-    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
@@ -71,7 +69,7 @@ fun SignUpScreen(
             }
         }
     }
-
+    
     uiState.errorResId?.let { errorResId ->
         TaskErrorFancyDialog(
             title = stringResource(R.string.title_error_dialog_auth),
@@ -84,6 +82,30 @@ fun SignUpScreen(
             onDismissRequest = viewModel::clearError
         )
     }
+
+    SignUpScreenContent(
+        uiState = uiState,
+        onNameChange = viewModel::onNameChange,
+        onEmailChange = viewModel::onEmailChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onTogglePasswordVisibility = viewModel::onTogglePasswordVisibility,
+        onSignUpClick = viewModel::signUp,
+        onNavigateToLogin = onNavigateToLogin
+    )
+}
+
+@Composable
+fun SignUpScreenContent(
+    uiState: SignUpUiState,
+    onNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+    onSignUpClick: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    val dimens = LocalDimens.current
+    val scrollState = rememberScrollState()
 
     Scaffold(
         modifier = Modifier
@@ -131,7 +153,7 @@ fun SignUpScreen(
 
             InputTextField(
                 text = uiState.name,
-                onValueText = viewModel::onNameChange,
+                onValueText = onNameChange,
                 label = stringResource(R.string.label_name),
                 placeholder = stringResource(R.string.placeholder_name),
                 isError = uiState.nameErrorResId != null,
@@ -154,7 +176,7 @@ fun SignUpScreen(
 
             InputTextField(
                 text = uiState.email,
-                onValueText = viewModel::onEmailChange,
+                onValueText = onEmailChange,
                 label = stringResource(id = R.string.label_email),
                 isError = uiState.emailErrorResId != null,
                 errorMessage = uiState.emailErrorResId?.let { stringResource(it) },
@@ -175,7 +197,7 @@ fun SignUpScreen(
 
             InputTextField(
                 text = uiState.password,
-                onValueText = viewModel::onPasswordChange,
+                onValueText = onPasswordChange,
                 label = stringResource(id = R.string.label_password),
                 placeholder = stringResource(id = R.string.placeholder_password),
                 isError = uiState.passwordErrorResId != null,
@@ -184,8 +206,10 @@ fun SignUpScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(onDone = { viewModel.signUp() }),
-                visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardActions = KeyboardActions(onDone = { onSignUpClick() }),
+                visualTransformation = if (uiState.isPasswordVisible) {
+                    VisualTransformation.None
+                } else PasswordVisualTransformation(),
                 leadingIcon = {
                     Icon(
                         Icons.Default.Lock,
@@ -194,9 +218,11 @@ fun SignUpScreen(
                     )
                 },
                 trailingIcon = {
-                    IconButton(onClick = viewModel::onTogglePasswordVisibility) {
+                    IconButton(onClick = onTogglePasswordVisibility) {
                         Icon(
-                            imageVector = if (uiState.isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            imageVector = if (uiState.isPasswordVisible) {
+                                Icons.Default.Visibility
+                            } else Icons.Default.VisibilityOff,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -208,7 +234,7 @@ fun SignUpScreen(
 
             PrimaryButton(
                 text = stringResource(R.string.register_button_text),
-                onClick = viewModel::signUp,
+                onClick = onSignUpClick,
                 isLoading = uiState.isLoading,
                 enabled = uiState.isFormValid
             )
@@ -226,7 +252,7 @@ fun SignUpScreen(
 }
 
 @Preview(
-    name = "Dark Mode",
+    name = "SignUp Screen Dark",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )
@@ -234,9 +260,18 @@ fun SignUpScreen(
 internal fun SignUpScreenPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            SignUpScreen(
-                onNavigateToLogin = {},
-                onSignUpSuccess = {}
+            SignUpScreenContent(
+                uiState = SignUpUiState(
+                    name = "",
+                    email = "",
+                    isFormValid = false
+                ),
+                onNameChange = {},
+                onEmailChange = {},
+                onPasswordChange = {},
+                onTogglePasswordVisibility = {},
+                onSignUpClick = {},
+                onNavigateToLogin = {}
             )
         }
     }

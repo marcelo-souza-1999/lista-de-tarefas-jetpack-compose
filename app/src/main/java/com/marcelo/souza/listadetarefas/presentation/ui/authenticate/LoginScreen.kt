@@ -59,9 +59,6 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val dimens = LocalDimens.current
-    val scrollState = rememberScrollState()
-
     LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { event ->
             when (event) {
@@ -83,6 +80,28 @@ fun LoginScreen(
             onDismissRequest = viewModel::clearError
         )
     }
+
+    LoginScreenContent(
+        uiState = uiState,
+        onEmailChange = viewModel::onEmailChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onTogglePasswordVisibility = viewModel::onTogglePasswordVisibility,
+        onLoginClick = viewModel::login,
+        onNavigateToRegister = onNavigateToRegister
+    )
+}
+
+@Composable
+fun LoginScreenContent(
+    uiState: LoginUiState,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+    onLoginClick: () -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
+    val dimens = LocalDimens.current
+    val scrollState = rememberScrollState()
 
     Scaffold(
         modifier = Modifier
@@ -122,7 +141,7 @@ fun LoginScreen(
 
             InputTextField(
                 text = uiState.email,
-                onValueText = viewModel::onEmailChange,
+                onValueText = onEmailChange,
                 isError = uiState.emailErrorResId != null,
                 errorMessage = uiState.emailErrorResId?.let { stringResource(it) },
                 label = stringResource(id = R.string.label_email),
@@ -144,7 +163,7 @@ fun LoginScreen(
 
             InputTextField(
                 text = uiState.password,
-                onValueText = viewModel::onPasswordChange,
+                onValueText = onPasswordChange,
                 label = stringResource(id = R.string.label_password),
                 placeholder = stringResource(id = R.string.placeholder_password),
                 isError = uiState.passwordErrorResId != null,
@@ -153,8 +172,10 @@ fun LoginScreen(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(onDone = { viewModel.login() }),
-                visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardActions = KeyboardActions(onDone = { onLoginClick() }),
+                visualTransformation = if (uiState.isPasswordVisible) {
+                    VisualTransformation.None
+                } else PasswordVisualTransformation(),
                 leadingIcon = {
                     Icon(
                         Icons.Default.Lock,
@@ -163,7 +184,7 @@ fun LoginScreen(
                     )
                 },
                 trailingIcon = {
-                    IconButton(onClick = viewModel::onTogglePasswordVisibility) {
+                    IconButton(onClick = onTogglePasswordVisibility) {
                         Icon(
                             imageVector = if (uiState.isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = null,
@@ -177,7 +198,7 @@ fun LoginScreen(
 
             PrimaryButton(
                 text = stringResource(R.string.login_button_primary_text),
-                onClick = viewModel::login,
+                onClick = onLoginClick,
                 isLoading = uiState.isLoading,
                 enabled = uiState.isFormValid
             )
@@ -195,7 +216,7 @@ fun LoginScreen(
 }
 
 @Preview(
-    name = "Login Screen",
+    name = "Login Screen Dark",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )
@@ -203,9 +224,16 @@ fun LoginScreen(
 internal fun LoginScreenDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            LoginScreen(
-                onNavigateToRegister = {},
-                onLoginSuccess = {}
+            LoginScreenContent(
+                uiState = LoginUiState(
+                    email = "",
+                    isFormValid = true
+                ),
+                onEmailChange = {},
+                onPasswordChange = {},
+                onTogglePasswordVisibility = {},
+                onLoginClick = {},
+                onNavigateToRegister = {}
             )
         }
     }

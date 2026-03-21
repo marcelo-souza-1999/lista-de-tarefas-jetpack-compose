@@ -39,27 +39,31 @@ class AuthenticateRepositoryImpl(
         }
     }
 
-    override suspend fun register(
-        name: String,
-        email: String,
-        password: String
-    ): Result<Unit> {
-        return runCatching {
-            val result = firebaseAuth
-                .createUserWithEmailAndPassword(email, password)
-                .await()
+    override suspend fun register(name: String, email: String, password: String): Result<Unit> {
+        return try {
+            val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val userId = authResult.user?.uid ?: throw AuthUserNotFoundException()
 
-            val userId = result.user?.uid
-                ?: error("User ID is null")
-
-            firestore.collection(USERS_COLLECTION)
-                .document(userId)
-                .set(mapOf(FIELD_NAME to name))
-                .await()
+            try {
+                firestore.collection(USERS_COLLECTION)
+                    .document(userId)
+                    .set(mapOf(FIELD_NAME to name))
+                    .await()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                authResult.user?.delete()?.await()
+                Result.failure(e)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
     override suspend fun logout() {
         firebaseAuth.signOut()
+    }
+
+    private companion object {
+        class AuthUserNotFoundException : Exception("Não foi possível recuperar o UID do usuário recém-criado.")
     }
 }
