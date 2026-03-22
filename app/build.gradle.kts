@@ -130,6 +130,6 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
         html.required.set(false)
         txt.required.set(true)
         txt.outputLocation.set(file("$projectDir/detekt-report.txt"))
-        sarif.required.set(false)
+        sarif.required.set(true)
     }
 }
