@@ -1,4 +1,4 @@
-package com.marcelo.souza.listadetarefas.presentation.ui.screens
+package com.marcelo.souza.listadetarefas.presentation.ui.authenticate
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,34 +27,81 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.marcelo.souza.listadetarefas.R
+import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
 import com.marcelo.souza.listadetarefas.presentation.theme.AppTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.ListaDeTarefasTheme
 import com.marcelo.souza.listadetarefas.presentation.theme.LocalDimens
 import com.marcelo.souza.listadetarefas.presentation.ui.components.InputTextField
 import com.marcelo.souza.listadetarefas.presentation.ui.components.PrimaryButton
 import com.marcelo.souza.listadetarefas.presentation.ui.components.SecondaryButton
+import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskErrorFancyDialog
+import com.marcelo.souza.listadetarefas.presentation.viewmodel.LoginViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    onNavigateToRegister: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = koinViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is NavigationEvent.NavigateAndClear -> onLoginSuccess()
+                else -> Unit
+            }
+        }
+    }
+
+    uiState.errorResId?.let { errorResId ->
+        TaskErrorFancyDialog(
+            title = stringResource(R.string.title_error_dialog_auth),
+            message = stringResource(errorResId),
+            onRetryClick = {
+                viewModel.clearError()
+                viewModel.login()
+            },
+            onCancelClick = viewModel::clearError,
+            onDismissRequest = viewModel::clearError
+        )
+    }
+
+    LoginScreenContent(
+        uiState = uiState,
+        onEmailChange = viewModel::onEmailChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onTogglePasswordVisibility = viewModel::onTogglePasswordVisibility,
+        onLoginClick = viewModel::login,
+        onNavigateToRegister = onNavigateToRegister
+    )
+}
+
+@Composable
+fun LoginScreenContent(
+    uiState: LoginUiState,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onTogglePasswordVisibility: () -> Unit,
+    onLoginClick: () -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
     val dimens = LocalDimens.current
     val scrollState = rememberScrollState()
-
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var isPasswordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier
@@ -92,14 +140,19 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(dimens.size48))
 
             InputTextField(
-                text = email,
-                onValueText = { email = it },
+                text = uiState.email,
+                onValueText = onEmailChange,
+                isError = uiState.emailErrorResId != null,
+                errorMessage = uiState.emailErrorResId?.let { stringResource(it) },
                 label = stringResource(id = R.string.label_email),
                 placeholder = stringResource(id = R.string.placeholder_email),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Email,
+                        Icons.Default.Email,
                         contentDescription = null,
                         tint = AppTheme.colors.textSecondary
                     )
@@ -109,29 +162,31 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(dimens.size16))
 
             InputTextField(
-                text = password,
-                onValueText = { password = it },
+                text = uiState.password,
+                onValueText = onPasswordChange,
                 label = stringResource(id = R.string.label_password),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = if (isPasswordVisible) {
+                placeholder = stringResource(id = R.string.placeholder_password),
+                isError = uiState.passwordErrorResId != null,
+                errorMessage = uiState.passwordErrorResId?.let { stringResource(it) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = { onLoginClick() }),
+                visualTransformation = if (uiState.isPasswordVisible) {
                     VisualTransformation.None
                 } else PasswordVisualTransformation(),
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Lock,
+                        Icons.Default.Lock,
                         contentDescription = null,
                         tint = AppTheme.colors.textSecondary
                     )
                 },
                 trailingIcon = {
-                    val icon = if (isPasswordVisible) {
-                        Icons.Default.Visibility
-                    } else {
-                        Icons.Default.VisibilityOff
-                    }
-                    IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                    IconButton(onClick = onTogglePasswordVisibility) {
                         Icon(
-                            imageVector = icon,
+                            imageVector = if (uiState.isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -143,15 +198,16 @@ fun LoginScreen() {
 
             PrimaryButton(
                 text = stringResource(R.string.login_button_primary_text),
-                onClick = { },
-                isLoading = false
+                onClick = onLoginClick,
+                isLoading = uiState.isLoading,
+                enabled = uiState.isFormValid
             )
 
             Spacer(modifier = Modifier.height(dimens.size16))
 
             SecondaryButton(
                 text = stringResource(R.string.signup_button_secondary_text),
-                onClick = { }
+                onClick = onNavigateToRegister
             )
 
             Spacer(modifier = Modifier.height(dimens.size16))
@@ -160,7 +216,7 @@ fun LoginScreen() {
 }
 
 @Preview(
-    name = "Login Screen",
+    name = "Login Screen Dark",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )
@@ -168,7 +224,17 @@ fun LoginScreen() {
 internal fun LoginScreenDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
         Surface(color = MaterialTheme.colorScheme.background) {
-            LoginScreen()
+            LoginScreenContent(
+                uiState = LoginUiState(
+                    email = "",
+                    isFormValid = true
+                ),
+                onEmailChange = {},
+                onPasswordChange = {},
+                onTogglePasswordVisibility = {},
+                onLoginClick = {},
+                onNavigateToRegister = {}
+            )
         }
     }
 }

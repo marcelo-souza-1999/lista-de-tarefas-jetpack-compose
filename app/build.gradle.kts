@@ -3,23 +3,19 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-    //alias(libs.plugins.google.gms.services)
+    alias(libs.plugins.google.gms.services)
     alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.hotswan.compiler)
+    alias(libs.plugins.kotzilla)
 }
 
-ksp {
-    arg("KOIN_DEFAULT_MODULE", "true")
-    arg("KOIN_CONFIG_CHECK", "true")
-}
 apply(plugin = "shot")
 apply(from = "../config/detekt/detekt.gradle")
 
 android {
     namespace = "com.marcelo.souza.listadetarefas"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.marcelo.souza.listadetarefas"
@@ -49,6 +45,18 @@ android {
         compose = true
     }
 
+    afterEvaluate {
+        tasks.matching { it.name.startsWith("ksp") }.configureEach {
+            dependsOn(tasks.matching { it.name.startsWith("generateKotzillaConfig") })
+        }
+    }
+
+    ksp {
+        arg("KOIN_DEFAULT_MODULE", "true")
+        arg("KOIN_CONFIG_CHECK", "true")
+        arg("KOIN_ANNOTATIONS_ROOT_PACKAGE", "com.marcelo.souza.listadetarefas")
+    }
+
     packaging {
         resources {
             excludes += listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md")
@@ -75,6 +83,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.bundles.composeIcons)
 
+    implementation(libs.koin.annotation)
     ksp(libs.koin.ksp.compiler)
 
     implementation(platform(libs.firebase.bom))
@@ -84,7 +93,6 @@ dependencies {
     implementation(libs.bundles.koin)
     implementation(libs.bundles.coroutines)
     implementation(libs.bundles.navigation3)
-    implementation(libs.bundles.retrofit)
     implementation(libs.mockwebserver)
     implementation(libs.compose.shimmer)
     implementation(libs.compose.alert.dialog)
@@ -116,11 +124,12 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
     include("**/*.kt")
     include("**/*.kts")
     exclude("**/build/**")
+    autoCorrect = true
     reports {
         xml.required.set(false)
-        html.required.set(true)
+        html.required.set(false)
         txt.required.set(true)
+        txt.outputLocation.set(file("$projectDir/detekt-report.txt"))
         sarif.required.set(true)
-        sarif.outputLocation.set(file("build/reports/detekt/detekt.sarif"))
     }
 }
