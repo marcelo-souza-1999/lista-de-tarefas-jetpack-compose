@@ -41,24 +41,8 @@ fun TaskLogoutConfirmationFancyDialog(
     )
 }
 
-@Preview(name = "Logout Dialog Light", showBackground = true)
-@Composable
-private fun TaskLogoutConfirmationFancyDialogPreview() {
-    ListaDeTarefasTheme(darkTheme = false) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            TaskLogoutConfirmationFancyDialog(
-                title = "Sair da conta",
-                message = "Deseja realmente sair do aplicativo? Suas tarefas locais serão sincronizadas.",
-                onConfirmLogout = {},
-                onCancelClick = {},
-                onDismissRequest = {}
-            )
-        }
-    }
-}
-
 @Preview(
-    name = "Logout Dialog Dark",
+    name = "Logout Dialog",
     showBackground = true,
     uiMode = Configuration.UI_MODE_NIGHT_YES
 )

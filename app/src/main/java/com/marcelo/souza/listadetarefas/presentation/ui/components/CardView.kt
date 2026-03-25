@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -77,7 +78,11 @@ fun TaskCard(
     ) {
         Column(modifier = Modifier.padding(dimens.size20)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = task.isCompleted, onCheckedChange = onCheckedChange)
+                Checkbox(
+                    checked = task.isCompleted,
+                    onCheckedChange = onCheckedChange,
+                    modifier = Modifier
+                        .testTag("check_box_card"))
                 Spacer(modifier = Modifier.width(dimens.size8))
                 Text(
                     text = task.title,
@@ -131,14 +136,24 @@ fun TaskCard(
                         color = if (task.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.padding(end = dimens.size8)
                     )
-                    IconButton(onClick = onEditClick, modifier = Modifier.size(dimens.size32)) {
+                    IconButton(
+                        onClick = onEditClick,
+                        modifier = Modifier
+                            .size(dimens.size32)
+                            .testTag("edit_task_btn")
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = null,
                             tint = EditBlue
                         )
                     }
-                    IconButton(onClick = onDeleteClick, modifier = Modifier.size(dimens.size32)) {
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier
+                            .size(dimens.size32)
+                            .testTag("delete_task_btn")
+                    ) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = null,

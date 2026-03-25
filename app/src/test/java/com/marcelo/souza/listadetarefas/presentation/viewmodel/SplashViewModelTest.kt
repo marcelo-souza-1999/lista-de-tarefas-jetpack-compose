@@ -1,14 +1,15 @@
 package com.marcelo.souza.listadetarefas.presentation.viewmodel
 
-import com.marcelo.souza.listadetarefas.MainDispatcherRule
+import app.cash.turbine.test
+import com.marcelo.souza.listadetarefas.utils.MainDispatcherRule
 import com.marcelo.souza.listadetarefas.domain.repository.AuthenticateRepository
 import com.marcelo.souza.listadetarefas.presentation.navigation.model.HomeKey
 import com.marcelo.souza.listadetarefas.presentation.navigation.model.LoginKey
 import com.marcelo.souza.listadetarefas.presentation.navigation.model.NavigationEvent
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -27,9 +28,13 @@ class SplashViewModelTest {
         every { authRepository.isUserLoggedIn() } returns true
 
         val viewModel = SplashViewModel(authRepository)
-        advanceTimeBy(1500)
 
-        assertEquals(NavigationEvent.NavigateAndClear(HomeKey), viewModel.navigationEvent.first())
+        viewModel.navigationEvent.test {
+            advanceTimeBy(1501)
+
+            val event = awaitItem()
+            assertEquals(NavigationEvent.NavigateAndClear(HomeKey), event)
+        }
     }
 
     @Test
@@ -37,8 +42,36 @@ class SplashViewModelTest {
         every { authRepository.isUserLoggedIn() } returns false
 
         val viewModel = SplashViewModel(authRepository)
-        advanceTimeBy(1500)
 
-        assertEquals(NavigationEvent.NavigateAndClear(LoginKey), viewModel.navigationEvent.first())
+        viewModel.navigationEvent.test {
+            advanceTimeBy(1501)
+
+            val event = awaitItem()
+            assertEquals(NavigationEvent.NavigateAndClear(LoginKey), event)
+        }
+    }
+
+    @Test
+    fun `should NOT navigate before splash delay`() = runTest {
+        every { authRepository.isUserLoggedIn() } returns true
+        val viewModel = SplashViewModel(authRepository)
+
+        viewModel.navigationEvent.test {
+            advanceTimeBy(1000)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `should navigate to login when repository throws exception`() = runTest {
+        coEvery { authRepository.isUserLoggedIn() } throws Exception("Database error")
+
+        val viewModel = SplashViewModel(authRepository)
+
+        viewModel.navigationEvent.test {
+            advanceTimeBy(1501)
+            val event = awaitItem()
+            assertEquals(NavigationEvent.NavigateAndClear(LoginKey), event)
+        }
     }
 }

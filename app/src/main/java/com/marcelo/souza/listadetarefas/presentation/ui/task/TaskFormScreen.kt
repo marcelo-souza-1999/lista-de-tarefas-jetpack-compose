@@ -148,7 +148,7 @@ fun TaskFormScreen(
 }
 
 @Composable
-private fun TaskFormContent(
+fun TaskFormContent(
     title: String,
     titleTopBar: String,
     titleButton: String,

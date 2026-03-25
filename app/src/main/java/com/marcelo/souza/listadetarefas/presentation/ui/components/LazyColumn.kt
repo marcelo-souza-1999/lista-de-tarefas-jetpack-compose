@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import com.marcelo.souza.listadetarefas.domain.model.Task
 import com.marcelo.souza.listadetarefas.domain.model.TaskPriority
@@ -120,7 +121,9 @@ fun TaskLazyColumn(
                         task = task,
                         onCheckedChange = { isChecked -> onTaskCheckedChange(task, isChecked) },
                         onEditClick = { onEditTask(task) },
-                        onDeleteClick = { onDeleteTask(task) }
+                        onDeleteClick = { onDeleteTask(task) },
+                        modifier = Modifier
+                            .testTag("card_task_list")
                     )
                 }
             )

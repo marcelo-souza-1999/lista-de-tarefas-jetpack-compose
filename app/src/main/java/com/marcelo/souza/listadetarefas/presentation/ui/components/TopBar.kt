@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -78,7 +79,10 @@ fun TopBar(
                 )
             }
 
-            IconButton(onClick = onLogoutClick) {
+            IconButton(
+                onClick = onLogoutClick,
+                modifier = Modifier.testTag("logout_btn")
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Logout,
                     contentDescription = null,
@@ -118,7 +122,10 @@ fun SecondaryTopBar(
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBackClick) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.testTag("back_btn")
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = null,
@@ -164,7 +171,11 @@ internal fun TopBarLightPreview() {
     }
 }
 
-@Preview(name = "Secondary Top Bar Dark Mode", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    name = "Secondary Top Bar Dark Mode",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 internal fun SecondaryTopBarDarkPreview() {
     ListaDeTarefasTheme(darkTheme = true) {
