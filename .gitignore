@@ -17,3 +17,4 @@
 .cxx
 local.properties
 .hotswan/
+/node_modules
