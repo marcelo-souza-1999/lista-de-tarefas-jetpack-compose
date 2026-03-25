@@ -26,11 +26,12 @@ class SplashViewModel(
 
     private fun checkAuthStatus() {
         viewModelScope.launch {
-            delay(SPLASH_DELAY_MILLIS)
-
-            if (authRepository.isUserLoggedIn()) {
-                _navigationEvent.send(NavigationEvent.NavigateAndClear(HomeKey))
-            } else {
+            try {
+                delay(SPLASH_DELAY_MILLIS)
+                val isLoggedIn = authRepository.isUserLoggedIn()
+                val destination = if (isLoggedIn) HomeKey else LoginKey
+                _navigationEvent.send(NavigationEvent.NavigateAndClear(destination))
+            } catch (e: Exception) {
                 _navigationEvent.send(NavigationEvent.NavigateAndClear(LoginKey))
             }
         }

@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -8,12 +10,13 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.hotswan.compiler)
     alias(libs.plugins.kotzilla)
+    alias(libs.plugins.kover)
 }
 
 apply(plugin = "shot")
 apply(from = "../config/detekt/detekt.gradle")
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.marcelo.souza.listadetarefas"
     compileSdk = 36
 
@@ -25,6 +28,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "com.karumi.shot.ShotTestRunner"
+
+        testInstrumentationRunnerArguments["useTestStorageService"] = "false"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
     buildTypes {
@@ -41,20 +47,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     buildFeatures {
         compose = true
-    }
-
-    afterEvaluate {
-        tasks.matching { it.name.startsWith("ksp") }.configureEach {
-            dependsOn(tasks.matching { it.name.startsWith("generateKotzillaConfig") })
-        }
-    }
-
-    ksp {
-        arg("KOIN_DEFAULT_MODULE", "true")
-        arg("KOIN_CONFIG_CHECK", "true")
-        arg("KOIN_ANNOTATIONS_ROOT_PACKAGE", "com.marcelo.souza.listadetarefas")
     }
 
     packaging {
@@ -62,11 +60,23 @@ android {
             excludes += listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md")
         }
     }
+}
 
-    configurations.all {
-        resolutionStrategy {
-            force("com.google.errorprone:error_prone_annotations:2.36.0")
-        }
+tasks.configureEach {
+    if (name.contains("ksp", ignoreCase = true)) {
+        dependsOn("generateKotzillaConfig")
+    }
+}
+
+ksp {
+    arg("KOIN_DEFAULT_MODULE", "true")
+    arg("KOIN_CONFIG_CHECK", "true")
+    arg("KOIN_ANNOTATIONS_ROOT_PACKAGE", "com.marcelo.souza.listadetarefas")
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("${libs.errorprone.annotations.get().module}:${libs.versions.errorprone.get()}")
     }
 }
 
@@ -87,7 +97,6 @@ dependencies {
     ksp(libs.koin.ksp.compiler)
 
     implementation(platform(libs.firebase.bom))
-
     implementation(libs.bundles.firebase)
     implementation(libs.bundles.coil.images)
     implementation(libs.bundles.koin)
@@ -99,6 +108,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.turbine.test)
     testImplementation(libs.mockk.io)
     testImplementation(libs.mockk.android)
 
@@ -114,6 +125,24 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "*.BuildConfig",
+                    "*ComposableSingletons*",
+                    "*_Factory*",
+                    "*MapperImpl*",
+                    "com.marcelo.souza.listadetarefas.di.**",
+                    "com.marcelo.souza.listadetarefas.data.model.**"
+                )
+                annotatedBy("androidx.compose.runtime.Composable")
+            }
+        }
+    }
 }
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {

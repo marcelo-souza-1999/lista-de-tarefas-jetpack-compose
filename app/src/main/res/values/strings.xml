@@ -24,7 +24,7 @@
     <string name="title_topbar_registration_tasks">Nova Tarefa</string>
     <string name="title_topbar_registration_edit_tasks">Editar Tarefa</string>
     <string name="register_tasks_button_text">Salvar Tarefa</string>
-    <string name="edit_tasks_button_text">Editar Tarefa</string>
+    <string name="edit_tasks_button_text">Atualizar Tarefa</string>
     <string name="title_register_task_label">Título da Tarefa</string>
     <string name="description_register_task_label">Descrição da Tarefa</string>
     <string name="title_priority_register_task_label">Prioridade</string>
@@ -33,6 +33,8 @@
     <string name="message_success_dialog_registration_task">Sua nova tarefa foi registrada com sucesso e já está disponível na sua lista.</string>
     <string name="title_button_success_dialog_registration_task">OK</string>
 
+    <string name="title_error_dialog_get_tasks">Não foi possível recuperar as tarefas</string>
+    <string name="message_error_dialog_get_tasks">Ocorreu um erro inesperado ao recuperar as tarefas. Tente novamente em instantes</string>
     <string name="title_error_dialog_registration_task">Não foi possível salvar a tarefa</string>
     <string name="message_error_dialog_registration_task_network">Parece que houve um problema de conexão. Verifique sua internet e tente novamente.</string>
     <string name="message_error_dialog_permission">Você não tem permissão para essa ação no momento.</string>

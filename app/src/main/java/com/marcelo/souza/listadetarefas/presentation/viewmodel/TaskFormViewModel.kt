@@ -60,14 +60,13 @@ class TaskFormViewModel(
     }
 
     fun saveTask() {
-        val currentState = _uiState.value
-
-        if (currentState.isLoading || currentState.title.trim().isBlank()) return
-
         viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState.isLoading || currentState.title.trim().isBlank()) return@launch
+
             _uiEvent.send(UiEvent.HideKeyboard)
 
-            _uiState.value = currentState.copy(
+            _uiState.value = _uiState.value.copy(
                 isLoading = true,
                 error = null
             )
@@ -95,14 +94,14 @@ class TaskFormViewModel(
 
             _uiState.value = when (result) {
                 is TaskResult.Success -> {
-                    currentState.copy(
+                    _uiState.value.copy(
                         isLoading = false,
                         showSuccessDialog = true
                     )
                 }
 
                 is TaskResult.Error -> {
-                    currentState.copy(
+                    _uiState.value.copy(
                         isLoading = false,
                         error = result.error
                     )

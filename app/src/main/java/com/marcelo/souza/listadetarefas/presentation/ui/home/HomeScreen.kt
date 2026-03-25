@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,7 +49,6 @@ import com.marcelo.souza.listadetarefas.presentation.ui.components.TopBar
 import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskDeleteConfirmationFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskErrorFancyDialog
 import com.marcelo.souza.listadetarefas.presentation.ui.components.dialogs.TaskLogoutConfirmationFancyDialog
-import com.marcelo.souza.listadetarefas.presentation.utils.toMessageRes
 import com.marcelo.souza.listadetarefas.presentation.viewmodel.HomeViewModel
 import com.marcelo.souza.listadetarefas.presentation.viewmodel.HomeViewModel.HomeDialogType
 import org.koin.androidx.compose.koinViewModel
@@ -77,10 +77,10 @@ fun HomeScreen(
         }
     }
 
-    dialogError?.let { error ->
+    dialogError?.let { _ ->
         TaskErrorFancyDialog(
-            title = stringResource(R.string.title_error_dialog_registration_task),
-            message = stringResource(error.toMessageRes()),
+            title = stringResource(R.string.title_error_dialog_get_tasks),
+            message = stringResource(R.string.message_error_dialog_get_tasks),
             onRetryClick = { viewModel.dismissDialog(HomeDialogType.ERROR) },
             onCancelClick = { viewModel.dismissDialog(HomeDialogType.ERROR) },
             onDismissRequest = { viewModel.dismissDialog(HomeDialogType.ERROR) }
@@ -122,7 +122,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeScreenContent(
+fun HomeScreenContent(
     tasks: List<Task>,
     isLoading: Boolean,
     selectedFilter: TaskFilter,
@@ -233,13 +233,18 @@ private fun AnimatedAddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     )
 
     FloatingActionButton(
-        modifier = modifier.scale(scale),
+        modifier = modifier
+            .scale(scale)
+            .testTag("add_task_fab_btn"),
         onClick = onClick,
         interactionSource = interactionSource,
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary
     ) {
-        Icon(Icons.Default.Add, contentDescription = "Add Task")
+        Icon(
+            Icons.Default.Add,
+            contentDescription = null
+        )
     }
 }
 
