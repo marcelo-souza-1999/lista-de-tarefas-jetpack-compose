@@ -27,7 +27,7 @@ lifecycleViewmodelNavigation3 = "2.10.0"
 materialAdaptiveNavigation3 = "1.2.0"
 compose-shimmer = "1.3.3"
 koin = "4.1.1"
-koin-annotations = "2.3.1"
+koin-annotations = "4.2.0"
 coil-images = "3.3.0"
 firebase-bom = "34.8.0"
 
