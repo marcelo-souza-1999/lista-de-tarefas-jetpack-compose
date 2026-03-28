@@ -2,6 +2,7 @@
 .gradle
 .idea
 .kotlin
+/app/google-services.json
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -15,3 +16,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+.hotswan/
+/node_modules

@@ -10,33 +10,46 @@ val Typography = Typography(
     // Screen Titles
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold,
-        fontSize = 30.sp,
-        letterSpacing = (-0.5).sp
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = (-1).sp
     ),
-    // Titles in the NavigationBar
+
+    // NavigationBar or Section Titles
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp
     ),
-    // Input Labels
-    labelMedium = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        color = TextSecondaryLight
-    ),
-    // Button Texts
+
+    // Primary Button Texts
     labelLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 16.sp
+        fontSize = 16.sp,
+        letterSpacing = 0.5.sp
     ),
-    // Body text (Tasks)
+
+    // Secondary/Link Button Texts
+    bodyMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp
+    ),
+
+    // Input Field Labels (E-mail, Password)
+    labelMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp
+    ),
+
+    // Standard Body Text or List Items
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp
+        fontSize = 16.sp,
+        lineHeight = 24.sp
     )
 )

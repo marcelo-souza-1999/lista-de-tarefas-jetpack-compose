@@ -1,25 +1,24 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-    //alias(libs.plugins.google.gms.services)
+    alias(libs.plugins.google.gms.services)
     alias(libs.plugins.detekt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.hotswan.compiler)
+    alias(libs.plugins.kotzilla)
+    alias(libs.plugins.kover)
 }
 
-ksp {
-    arg("KOIN_DEFAULT_MODULE", "true")
-    arg("KOIN_CONFIG_CHECK", "true")
-}
 apply(plugin = "shot")
 apply(from = "../config/detekt/detekt.gradle")
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.marcelo.souza.listadetarefas"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.marcelo.souza.listadetarefas"
@@ -29,6 +28,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "com.karumi.shot.ShotTestRunner"
+
+        testInstrumentationRunnerArguments["useTestStorageService"] = "false"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
     buildTypes {
@@ -45,6 +47,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     buildFeatures {
         compose = true
     }
@@ -54,11 +60,23 @@ android {
             excludes += listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md")
         }
     }
+}
 
-    configurations.all {
-        resolutionStrategy {
-            force("com.google.errorprone:error_prone_annotations:2.36.0")
-        }
+tasks.configureEach {
+    if (name.contains("ksp", ignoreCase = true)) {
+        dependsOn("generateKotzillaConfig")
+    }
+}
+
+ksp {
+    arg("KOIN_DEFAULT_MODULE", "true")
+    arg("KOIN_CONFIG_CHECK", "true")
+    arg("KOIN_ANNOTATIONS_ROOT_PACKAGE", "com.marcelo.souza.listadetarefas")
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("${libs.errorprone.annotations.get().module}:${libs.versions.errorprone.get()}")
     }
 }
 
@@ -75,22 +93,23 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.bundles.composeIcons)
 
+    implementation(libs.koin.annotation)
     ksp(libs.koin.ksp.compiler)
 
     implementation(platform(libs.firebase.bom))
-
     implementation(libs.bundles.firebase)
     implementation(libs.bundles.coil.images)
     implementation(libs.bundles.koin)
     implementation(libs.bundles.coroutines)
     implementation(libs.bundles.navigation3)
-    implementation(libs.bundles.retrofit)
     implementation(libs.mockwebserver)
     implementation(libs.compose.shimmer)
     implementation(libs.compose.alert.dialog)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.turbine.test)
     testImplementation(libs.mockk.io)
     testImplementation(libs.mockk.android)
 
@@ -108,6 +127,24 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "*.BuildConfig",
+                    "*ComposableSingletons*",
+                    "*_Factory*",
+                    "*MapperImpl*",
+                    "com.marcelo.souza.listadetarefas.di.**",
+                    "com.marcelo.souza.listadetarefas.data.model.**"
+                )
+                annotatedBy("androidx.compose.runtime.Composable")
+            }
+        }
+    }
+}
+
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
     parallel = true
     buildUponDefaultConfig = true
@@ -116,11 +153,12 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
     include("**/*.kt")
     include("**/*.kts")
     exclude("**/build/**")
+    autoCorrect = true
     reports {
         xml.required.set(false)
-        html.required.set(true)
+        html.required.set(false)
         txt.required.set(true)
+        txt.outputLocation.set(file("$projectDir/detekt-report.txt"))
         sarif.required.set(true)
-        sarif.outputLocation.set(file("build/reports/detekt/detekt.sarif"))
     }
 }

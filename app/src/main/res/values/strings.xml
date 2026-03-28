@@ -1,3 +1,83 @@
 <resources>
     <string name="app_name">Lista de Tarefas</string>
+
+    <string name="login_title">Gerencie suas tarefas com facilidade</string>
+    <string name="login_button_primary_text">Entrar</string>
+    <string name="signup_button_secondary_text">Não tem conta? Cadastre-se agora</string>
+
+    <string name="register_title">Crie sua conta</string>
+    <string name="register_subtitle">Preencha os dados abaixo</string>
+    <string name="register_button_text">Cadastrar</string>
+    <string name="login_link_text">Já tem uma conta? Faça login</string>
+
+    <string name="label_name">Nome completo</string>
+    <string name="placeholder_name">Digite seu nome</string>
+
+    <string name="label_email">E-mail</string>
+    <string name="placeholder_email">Insira seu e-mail</string>
+
+    <string name="label_password">Senha</string>
+    <string name="placeholder_password">Insira sua senha</string>
+
+    <string name="home_greeting">Olá,</string>
+
+    <string name="title_topbar_registration_tasks">Nova Tarefa</string>
+    <string name="title_topbar_registration_edit_tasks">Editar Tarefa</string>
+    <string name="register_tasks_button_text">Salvar Tarefa</string>
+    <string name="edit_tasks_button_text">Atualizar Tarefa</string>
+    <string name="title_register_task_label">Título da Tarefa</string>
+    <string name="description_register_task_label">Descrição da Tarefa</string>
+    <string name="title_priority_register_task_label">Prioridade</string>
+
+    <string name="title_success_dialog_registration_task">Tarefa Salva!</string>
+    <string name="message_success_dialog_registration_task">Sua nova tarefa foi registrada com sucesso e já está disponível na sua lista.</string>
+    <string name="title_button_success_dialog_registration_task">OK</string>
+
+    <string name="title_error_dialog_get_tasks">Não foi possível recuperar as tarefas</string>
+    <string name="message_error_dialog_get_tasks">Ocorreu um erro inesperado ao recuperar as tarefas. Tente novamente em instantes</string>
+    <string name="title_error_dialog_registration_task">Não foi possível salvar a tarefa</string>
+    <string name="message_error_dialog_registration_task_network">Parece que houve um problema de conexão. Verifique sua internet e tente novamente.</string>
+    <string name="message_error_dialog_permission">Você não tem permissão para essa ação no momento.</string>
+    <string name="message_error_dialog_registration_task_unknown">Ocorreu um erro inesperado ao salvar a tarefa. Tente novamente em instantes.</string>
+    <string name="title_button_positive_error_dialog_registration_task">Tentar novamente</string>
+    <string name="title_button_negative_error_dialog_registration_task">Cancelar</string>
+
+    <string name="delete_task_dialog_title">Confirmar exclusão</string>
+    <string name="delete_task_dialog_message">Deseja realmente excluir a tarefa "%1$s"?</string>
+    <string name="title_button_delete_confirm">Excluir</string>
+    <string name="title_button_cancel_delete_confirm">Cancelar</string>
+
+    <string name="logout_dialog_title">Sair da conta</string>
+    <string name="logout_dialog_message">Tem certeza que deseja sair?</string>
+    <string name="title_button_confirm_logout">Sair</string>
+    <string name="title_button_cancel_logout">Cancelar</string>
+
+    <string name="title_success_dialog_edit_task">Tarefa atualizada!</string>
+    <string name="message_success_dialog_edit_task">
+    Sua tarefa foi atualizada com sucesso.
+    </string>
+
+    <string name="title_error_dialog_auth">Erro no login</string>
+
+    <string name="filter_all">Todas</string>
+    <string name="filter_pending">Pendentes</string>
+    <string name="filter_completed">Concluídas</string>
+    <string name="empty_tasks_title">Nenhuma tarefa encontrada</string>
+    <string name="empty_tasks_description">Adicione sua primeira tarefa ou ajuste o filtro para visualizar outros itens.</string>
+    <string name="task_completed">Concluída</string>
+    <string name="task_pending">Pendente</string>
+
+    <string name="task_priority_high">Alta</string>
+    <string name="task_priority_medium">Média</string>
+    <string name="task_priority_low">Baixa</string>
+
+    <string name="error_login_invalid_credentials">E-mail ou senha inválidos.</string>
+    <string name="error_email_invalid_credentials">E-mail inválido.</string>
+    <string name="error_login_user_not_found">Usuário não encontrado para este e-mail.</string>
+    <string name="error_registration_invalid_name">Informe um nome válido para cadastro.</string>
+    <string name="error_registration_weak_password">Senha fraca. Use no mínimo 6 caracteres.</string>
+    <string name="error_password_needs_special_char">A senha deve conter ao menos um caractere especial (ex: @, #, $).</string>
+    <string name="error_registration_email_in_use">Este e-mail já está em uso.</string>
+    <string name="error_common_network">Problema de conexão. Verifique sua internet e tente novamente.</string>
+    <string name="error_common_unknown">Algo deu errado. Tente novamente em instantes.</string>
 </resources>
