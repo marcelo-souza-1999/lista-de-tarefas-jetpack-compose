@@ -1,5 +1,6 @@
 package com.marcelo.souza.listadetarefas.presentation.ui.authenticate
 
+import com.google.firebase.FirebaseNetworkException
 import com.marcelo.souza.listadetarefas.R
 import java.net.UnknownHostException
 
@@ -34,7 +35,7 @@ fun Throwable.toLoginErrorResId(): Int {
                 message.contains("INVALID_LOGIN_CREDENTIALS") -> R.string.error_login_invalid_credentials
 
         message.contains("USER_NOT_FOUND") -> R.string.error_login_user_not_found
-        this is UnknownHostException -> R.string.error_common_network
+        this is FirebaseNetworkException -> R.string.error_common_network
         else -> R.string.error_common_unknown
     }
 }
