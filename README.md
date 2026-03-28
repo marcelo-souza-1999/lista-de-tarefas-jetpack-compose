@@ -1,12 +1,8 @@
 # 📝 Lista de Tarefas - Jetpack Compose
 
-Um aplicativo seguindo as boas práticas de desenvolvimento Android, focado em produtividade,
-desenvolvido nativamente utilizando **Kotlin** e **Jetpack Compose**.
+Um aplicativo seguindo as boas práticas de desenvolvimento Android, focado em produtividade, desenvolvido nativamente utilizando **Kotlin** e **Jetpack Compose**.
 
-O objetivo principal deste projeto é demonstrar a aplicação de engenharia de software, arquitetura
-limpa e testes automatizados no ecossistema Android moderno. O app permite aos usuários criar
-contas, autenticar-se e gerenciar tarefas de forma intuitiva, com tratamento completo de erros e
-feedback visual através de dialogs customizados.
+O objetivo principal deste projeto é demonstrar a aplicação de engenharia de software, arquitetura limpa e testes automatizados no ecossistema Android moderno. O app permite aos usuários criar contas, autenticar-se e gerenciar tarefas de forma intuitiva, com tratamento completo de erros e feedback visual através de dialogs customizados.
 
 ---
 
@@ -16,6 +12,7 @@ Este projeto utiliza o que há de mais moderno no desenvolvimento Android:
 
 * **UI:** Jetpack Compose e Material Design 3
 * **Linguagem:** Kotlin
+* **Backend/Auth:** Firebase (Authentication e Firestore)
 * **Arquitetura:** Clean Architecture com MVVM / MVI
 * **Injeção de Dependência:** Koin Annotations
 * **Navegação:** Jetpack Navigation 3 Compose (Type-Safe)
@@ -26,11 +23,10 @@ Este projeto utiliza o que há de mais moderno no desenvolvimento Android:
 
 ## 📁 Estrutura do Projeto
 
-O projeto segue os princípios da **Clean Architecture**, dividindo responsabilidades de forma clara
-e escalável:
+O projeto segue os princípios da **Clean Architecture**, dividindo responsabilidades de forma clara e escalável:
 
 * 📦 **data**: Camada de dados responsável por obter e fornecer informações.
-    * `datasource`: Implementações de acesso a dados (APIs, Banco de Dados).
+    * `datasource`: Implementações de acesso a dados (Firebase Firestore, Auth).
     * `mapper`: Conversores entre modelos de dados (DTOs) e modelos de domínio.
     * `model`: Modelos de transferência de dados (Ex: `TaskDto`).
     * `repository`: Implementação concreta das interfaces do repositório.
@@ -49,43 +45,29 @@ e escalável:
 
 ## ✨ Boas Práticas e Funcionalidades
 
-* **Tratamento de Erros e Feedback:** Uso de `Dialogs` customizados (`ErrorDialog`, `SuccessDialog`,
-  `DeleteDialog`) para garantir feedback em todas as operações.
-* **Gerenciamento de Estado:** Uso de classes seladas (`UiState`) para representar estados de
-  *Loading*, *Success* e *Error*.
-* **Navegação Desacoplada:** Gerenciamento via `AppNavigator`, evitando acoplamento entre a UI e o
-  `NavController`.
-* **Código Limpo:** Uso de extensões utilitárias e mapeamento de erros para manter as Views focadas
-  apenas em renderização.
+* **Integração com Firebase:** Autenticação segura e armazenamento de tarefas em tempo real.
+* **Tratamento de Erros e Feedback:** Uso de `Dialogs` customizados para garantir feedback em todas as operações (Erro, Sucesso, Confirmação).
+* **Gerenciamento de Estado:** Uso de classes seladas (`UiState`) para representar estados de *Loading*, *Success* e *Error*.
+* **Navegação Desacoplada:** Gerenciamento via `AppNavigator`, evitando acoplamento da UI com o `NavController`.
 
 ---
 
 ## 🧪 Testes e Cobertura (Kover)
 
-A qualidade é garantida por uma suíte de testes robusta. Utilizamos o **Kover** para gerar
-relatórios de cobertura, garantindo a proteção das regras de negócio.
+A qualidade é garantida por uma suíte de testes robusta. Utilizamos o **Kover** para gerar relatórios de cobertura das regras de negócio.
 
 ### 📸 Testes de Snapshot (Screenshot Tests)
 
 Para evitar regressões visuais, utilizamos testes de snapshot.
-
-* **Dispositivo Base:** Imagens geradas simulando um **Motorola Edge 50 Neo** (6.4", 1220 x 2670 px,
-  Super HD).
-* **Atenção:** Emuladores com densidades de pixels diferentes podem causar falhas na validação.
-
-**Como regravar as imagens de referência:**
-
-```bash
-./gradlew recordPaparazziDebug
-````
+* **Dispositivo Base:** Motorola Edge 50 Neo (6.4", 1220 x 2670 px).
+* **Comando para gravar snapshots:** `./gradlew recordPaparazziDebug`
 
 ### 🛠️ Script de Testes Facilitado
 
 Para rodar todos os testes (Unitários, Instrumentados e Lint) de uma só vez:
-
 ```bash
 ./run_tests.sh
-```
+````
 
 -----
 
@@ -93,19 +75,30 @@ Para rodar todos os testes (Unitários, Instrumentados e Lint) de uma só vez:
 
 Configurada via **GitHub Actions** (`android.yml`). Em cada Pull Request:
 
-1.  Compilação do código e execução de testes unitários.
-2.  Análise via **DangerJS**, que comenta automaticamente no PR sobre qualidade e cobertura.
+1.  Compilação e execução de testes unitários.
+2.  Análise via **DangerJS**, que comenta no PR sobre qualidade e cobertura.
 
 -----
 
 ## ▶️ Como Executar o Projeto
 
+### 1\. Configuração do Firebase (Obrigatório)
+
+Este projeto utiliza o Firebase. Antes de rodar, você precisa:
+
+1.  Criar um projeto no [Firebase Console](https://console.firebase.google.com/).
+2.  Ativar **Authentication** (E-mail/Senha) e **Cloud Firestore**.
+3.  Adicionar um app Android ao projeto com o package name `com.marcelo.souza.api.filmes` (ou o configurado no seu `build.gradle`).
+4.  Baixar o arquivo `google-services.json` e colá-lo dentro da pasta `app/` do projeto.
+
+### 2\. Rodar o App
+
 1.  Clone o repositório:
     ```bash
-    git clone [https://github.com/marcelo-souza-1999/lista-de-tarefas-jetpack-compose.git](https://github.com/marcelo-souza-1999/lista-de-tarefas-jetpack-compose.git)
+    git clone https://github.com/marcelo-souza-1999/lista-de-tarefas-jetpack-compose.git
     ```
 2.  Abra no **Android Studio** (Ladybug ou superior).
-3.  Execute o app em um emulador ou dispositivo físico (`Shift + F10`).
+3.  Execute em um emulador ou dispositivo físico (`Shift + F10`).
 
 -----
 
