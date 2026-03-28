@@ -1,4 +1,3 @@
-````markdown
 # 📝 Lista de Tarefas - Jetpack Compose
 
 Um aplicativo seguindo as boas práticas de desenvolvimento Android, focado em produtividade,
@@ -121,7 +120,7 @@ Configurada via **GitHub Actions** (`android.yml`). Em cada Pull Request:
 
 ## 🎥 Demonstração do App
 
-*(Para adicionar o vídeo, arraste o arquivo .mp4 para esta seção durante a edição no GitHub)*
+https://github.com/user-attachments/assets/16f2c81c-f7d4-4e69-9dd4-dbe647156164
 
 -----
 
@@ -131,5 +130,3 @@ Desenvolvido com ☕ e 💻 por **Marcelo Souza**:
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/marcelosouza-1999/)
 [![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:marcelocaregnatodesouza@gmail.com)
-
-```
