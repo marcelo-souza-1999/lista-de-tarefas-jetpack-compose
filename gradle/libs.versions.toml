@@ -34,7 +34,7 @@ koin-annotations = "2.3.1"
 coil-images = "3.4.0"
 firebase-bom = "34.11.0"
 kover = "0.9.7"
-errorprone = "2.48.0"
+errorprone = "2.49.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
